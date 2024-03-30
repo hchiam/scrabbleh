@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>scrabbleh</title>
+    <style>
+      #gameBoard {
+        display: grid;
+        grid-template-columns: repeat(15, 20px);
+        grid-gap: 1px;
+      }
+      .cell {
+        width: 20px;
+        height: 20px;
+        background-color: #f0f0f0;
+        text-align: center;
+        vertical-align: middle;
+        line-height: 20px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="gameBoard"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+    <script src="https://unpkg.com/compromise"></script>
+
+    <script>
+      const firebaseConfig = {
+        // TODO
+      };
+
+      const app = firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore(app);
+
+      function initGameBoard() {
+        const boardSize = 15;
+        const gameBoard = document.getElementById("gameBoard");
+        for (let i = 0; i < boardSize * boardSize; i++) {
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+          gameBoard.appendChild(cell);
+          // TODO: events
+        }
+      }
+
+      function validateWord(word) {
+        const doc = nlp(word);
+        console.log("Valid word?", word);
+        return doc.has("#Noun");
+      }
+
+      function setupRealtimeUpdates() {
+        db.collection("games")
+          .doc("yourGameId")
+          .onSnapshot((doc) => {
+            console.log("Current data: ", doc.data());
+            // TODO: update game state based on changes
+          });
+      }
+
+      window.onload = function init() {
+        initGameBoard();
+        // setupRealtimeUpdates(); // TODO
+      };
+    </script>
+  </body>
+</html>
