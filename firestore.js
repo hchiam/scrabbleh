@@ -24,11 +24,14 @@ service cloud.firestore {
         	&& request.resource.data.players is list
         	&& request.resource.data.whoseTurn is string
         	&& request.resource.data.gameBoard is string
-          && request.resource.data.gameBoard.size() == 15*15;
+          && request.resource.data.gameBoard.size() == 15*15
+          && request.resource.data.bagOfPieces is map;
+          // && request.resource.data.bagOfPieces.keys().size() == 26
+          // && request.resource.data.bagOfPieces.keys().hasAll(['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M']);
       }
 
 			function onlyAllowedFieldsArePresent() {
-        let allowedFields = ['id', 'createdAt', 'players', 'whoseTurn', 'gameBoard'];
+        let allowedFields = ['id', 'createdAt', 'players', 'whoseTurn', 'gameBoard', 'bagOfPieces'];
         // ensure no extra fields are added
         return request.resource.data.keys().size() == allowedFields.size()
           && request.resource.data.keys().hasAll(allowedFields);

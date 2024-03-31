@@ -182,8 +182,7 @@
       const cornflowerBlue = new Set([
         20, 24, 76, 80, 84, 88, 136, 140, 144, 148, 200, 204,
       ]);
-      // TODO now: replace allPieces with firestore bagOfPieces
-      const allPieces = {
+      const initialBagOfPieces = {
         // "?": 2,
         E: 12,
         A: 9,
@@ -212,6 +211,35 @@
         Q: 1,
         Z: 1,
       };
+      const piecePoints = {
+        // "?": 0,
+        E: 12,
+        A: 1,
+        I: 1,
+        O: 1,
+        N: 1,
+        R: 1,
+        T: 1,
+        L: 1,
+        S: 1,
+        U: 1,
+        D: 2,
+        G: 2,
+        B: 3,
+        C: 3,
+        M: 3,
+        P: 3,
+        F: 4,
+        H: 4,
+        V: 4,
+        W: 4,
+        Y: 4,
+        K: 5,
+        J: 8,
+        X: 8,
+        Q: 10,
+        Z: 10,
+      };
       const dynamicStyle = $("#dynamicStyle");
       const submit = $("#submit");
       const cancel = $("#cancel");
@@ -228,7 +256,7 @@
         initSubmit();
         initCancel();
         goToGameId();
-        initPieces(Object.keys(allPieces).slice(0, 7));
+        initPieces(["E", "T", "A", "O", "I", "N"]); // TODO now: replace with getRandomLetters
         initGameBoard();
       };
 
@@ -662,6 +690,7 @@
             players: [],
             whoseTurn: "",
             gameBoard: " ".repeat(15 * 15),
+            bagOfPieces: initialBagOfPieces,
           });
           console.log("Game created with ID: ", gameRef.id);
           return gameRef.id; // Returns the generated game ID
@@ -707,6 +736,7 @@
           await updateDoc(gameRef, {
             gameBoard: gameBoard,
             whoseTurn: whoseTurn,
+            bagOfPieces: initialBagOfPieces, // TODO now: update this
           });
           console.log("Game updated successfully");
         } catch (error) {
@@ -759,6 +789,17 @@
       );
       function isProfanity(word) {
         return wordsToBlock.has(word.toLowerCase());
+      }
+
+      function getRandomLetters(startingBagOfPieces, howManyToTakeOut) {
+        const bagOfPieces = JSON.parse(JSON.stringify(startingBagOfPieces));
+        let lettersLeft = Object.keys(bagOfPieces);
+        const lettersTakingOut = [];
+        for (let i = 0; i < howManyToTakeOut; i++) {
+          // TODO now
+          lettersLeft = Object.keys(bagOfPieces);
+        }
+        return lettersTakingOut;
       }
     </script>
   </body>
