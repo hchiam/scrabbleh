@@ -186,7 +186,7 @@
         20, 24, 76, 80, 84, 88, 136, 140, 144, 148, 200, 204,
       ]);
       const allPieces = {
-        "?": 2,
+        // "?": 2,
         E: 12,
         A: 9,
         I: 9,
@@ -246,6 +246,13 @@
           if (candidateLetterChain.includes(" ")) {
             alert(
               `The letters must form a chain. \nHit cancel to try again. \n\n"${candidateLetterChain}"`
+            );
+            return;
+          }
+          const wordData = await getWordData(candidateLetterChain);
+          if (!wordData.isValid) {
+            alert(
+              `Word not found by the free dictionary API. \nHit cancel to try again. \n\n"${candidateLetterChain}"`
             );
             return;
           }
@@ -450,7 +457,7 @@
           .then((x) => x.json())
           .then((x) => {
             const errorTitle = "No Definitions Found";
-            const foundEntry = !("title" in x) || x.title.includes(errorTitle);
+            const foundEntry = !("title" in x) && !x.title.includes(errorTitle);
             const firstDefinition = foundEntry
               ? `First definition:  \n${x[0].meanings[0].definitions[0].definition}`
               : "";
@@ -479,9 +486,7 @@
             }
             const gameDoc = querySnapshot.docs[0];
             const gameData = gameDoc.data();
-            console.log("Game data: ", gameData);
             currentGameFirebaseId = gameDoc.id;
-            console.log("currentGameFirebaseId", currentGameFirebaseId);
             gameBoardString = gameData.gameBoard;
             // Setting up real-time updates for the fetched game
             setupRealtimeUpdatesForGameDoc(gameDoc.ref);
