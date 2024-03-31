@@ -47,7 +47,8 @@
         }
       }
       #gameId {
-        width: 12ch;
+        width: 15ch;
+        font-family: monospace;
       }
       .cell.candidate {
         outline-width: calc(var(--grid-gap) / 2);
@@ -121,14 +122,6 @@
     </style>
     <style id="dynamicStyle"></style>
     <script
-      type="module"
-      src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js"
-    ></script>
-    <script
-      type="module"
-      src="https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js"
-    ></script>
-    <script
       src="https://code.jquery.com/jquery-3.7.1.min.js"
       integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
       crossorigin="anonymous"
@@ -144,10 +137,11 @@
     <div id="pieces"></div>
     <div id="gameBoard"></div>
     <script type="module">
+      // firebase-app.js is the backbone for other firebase modules:
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
       // TODO: Add SDKs for Firebase products that you want to use
       // https://firebase.google.com/docs/web/setup#available-libraries
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-      // import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-analytics.js";
+      // like import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-analytics.js";
       import {
         getFirestore,
         collection,
@@ -188,6 +182,7 @@
       const cornflowerBlue = new Set([
         20, 24, 76, 80, 84, 88, 136, 140, 144, 148, 200, 204,
       ]);
+      // TODO now: replace allPieces with firestore bagOfPieces
       const allPieces = {
         // "?": 2,
         E: 12,
@@ -239,30 +234,67 @@
 
       function initSubmit() {
         submit.on("click", async () => {
-          const candidateRowOrColumn = [...gameBoard.find(".cell")].filter(
+          // check for continuous chain:
+
+          const chainRowOrColumn = [...gameBoard.find(".cell")].filter(
             (el) => $(el).css("opacity") !== "0.5"
           );
-          const candidateLetters = candidateRowOrColumn.map(
+          const chainLetters = chainRowOrColumn.map(
             (el) => $(el).text() || " "
           );
-          const candidateLetterChain = candidateLetters.join("").trim();
-          if (candidateLetterChain.includes(" ")) {
+          const chainWord = chainLetters.join("").trim();
+          if (chainWord.includes(" ")) {
             alert(
-              `The letters must form a chain. \nHit cancel to try again. \n\n"${candidateLetterChain}"`
+              `The letters must form connected chains. \nHit cancel to try again. \n\n"${chainWord}"`
             );
             return;
           }
-          const wordData = await getWordData(candidateLetterChain);
-          if (!wordData.isValid) {
-            alert(
-              `Word not found by the free dictionary API. \nHit cancel to try again. \n\n"${candidateLetterChain}"`
-            );
-            return;
+
+          // check for valid intersecting words:
+
+          let validIntersectingWords = true;
+          const candidateCells = [...gameBoard.find(".candidate")];
+          const candidateIndices = candidateCells.map((x) => $(x).data("i"));
+          const { min: minIndex, max: maxIndex } = candidateIndices.reduce(
+            (acc, x) => {
+              return { min: Math.min(acc.min, x), max: Math.max(acc.max, x) };
+            },
+            { min: Infinity, max: -Infinity }
+          );
+          const placedPiecesInARow = maxIndex - minIndex < 15;
+          if (candidateCells.length === 1) {
+            // check the intersecting row and the intersecting column
+            if (hasRow(minIndex)) {
+              validIntersectingWords &= await validateRow(minIndex);
+              if (!validIntersectingWords) return;
+            }
+            if (hasColumn(minIndex)) {
+              validIntersectingWords &= await validateColumn(minIndex);
+              if (!validIntersectingWords) return;
+            }
+          } else if (placedPiecesInARow) {
+            // check row just once and check all intersecting columns
+            validIntersectingWords &= await validateRow(minIndex);
+            if (!validIntersectingWords) return;
+            for (let i = minIndex; i <= maxIndex; i++) {
+              if (hasColumn(i)) {
+                validIntersectingWords &= await validateColumn(i);
+                if (!validIntersectingWords) return;
+              }
+            }
           } else {
-            alert(
-              `Word accepted. \n\nFirst definition: ${wordData.firstDefinition}`
-            );
+            // check column just once and check all intersecting rows
+            validIntersectingWords &= await validateColumn(minIndex);
+            if (!validIntersectingWords) return;
+            for (let i = minIndex; i <= maxIndex; i += 15) {
+              if (hasRow(i)) {
+                validIntersectingWords &= await validateRow(i);
+                if (!validIntersectingWords) return;
+              }
+            }
           }
+
+          if (!validIntersectingWords) return;
 
           // actually submit:
           gameBoardString = [...gameBoard.find(".cell")]
@@ -280,6 +312,99 @@
           submit.text("submit");
           cancel.text("cancel");
         });
+      }
+
+      function getRowIndex(i) {
+        return Math.floor(i / 15); // think: which layer in the pancake stack
+      }
+
+      function getColumnIndex(i) {
+        return i % 15; // think: how much overflow within a layer
+      }
+
+      function getIndexUp(i) {
+        return i >= 15 ? i - 15 : -1; // -1 means invalid
+      }
+
+      function getIndexLeft(i) {
+        return i % 15 !== 0 ? i - 1 : -1; // -1 means invalid
+      }
+
+      function getIndexRight(i) {
+        return (i + 1) % 15 !== 0 ? i + 1 : -1; // -1 means invalid
+      }
+
+      function getIndexDown(i) {
+        return i < 15 * 15 - 15 ? i + 15 : -1; // -1 means invalid
+      }
+
+      function hasRow(i) {
+        if ($(`.cell[data-i="${i}"]`).text() === "") return false;
+        return (
+          $(`.cell[data-i="${getIndexLeft(i)}"]`).text() !== "" ||
+          $(`.cell[data-i="${getIndexRight(i)}"]`).text() !== ""
+        );
+      }
+
+      function hasColumn(i) {
+        if ($(`.cell[data-i="${i}"]`).text() === "") return false;
+        return (
+          $(`.cell[data-i="${getIndexUp(i)}"]`).text() !== "" ||
+          $(`.cell[data-i="${getIndexDown(i)}"]`).text() !== ""
+        );
+      }
+
+      // check up/down and left/right
+      async function validateColumn(i) {
+        const lettersIndices = [i];
+        let up = getIndexUp(i);
+        let down = getIndexDown(i);
+        while (up !== -1 && $(`.cell[data-i="${up}"]`).text()) {
+          lettersIndices.unshift(up);
+          up = getIndexUp(up);
+        }
+        while (down !== -1 && $(`.cell[data-i="${down}"]`).text()) {
+          lettersIndices.push(down);
+          down = getIndexDown(down);
+        }
+        const candidateColumnWord = lettersIndices
+          .map((i) => $(`.cell[data-i="${i}"]`).text())
+          .join("");
+        const wordData = await getWordData(candidateColumnWord);
+        if (wordData.isValid) {
+          alert(
+            `Word verified: "${candidateColumnWord}". \n\nFirst definition: ${wordData.firstDefinition}`
+          );
+        } else {
+          alert(`A word could not be verified. \nHit cancel to try again.`);
+        }
+        return wordData.isValid;
+      }
+
+      async function validateRow(i) {
+        const lettersIndices = [i];
+        let left = getIndexLeft(i);
+        let right = getIndexRight(i);
+        while (left !== -1 && $(`.cell[data-i="${left}"]`).text()) {
+          lettersIndices.unshift(left);
+          left = getIndexLeft(left);
+        }
+        while (right !== -1 && $(`.cell[data-i="${right}"]`).text()) {
+          lettersIndices.push(right);
+          right = getIndexRight(right);
+        }
+        const candidateRowWord = lettersIndices
+          .map((i) => $(`.cell[data-i="${i}"]`).text())
+          .join("");
+        const wordData = await getWordData(candidateRowWord);
+        if (wordData.isValid) {
+          alert(
+            `Word verified: "${candidateRowWord}". \n\nFirst definition: ${wordData.firstDefinition}`
+          );
+        } else {
+          alert(`A word could not be verified. \nHit cancel to try again.`);
+        }
+        return wordData.isValid;
       }
 
       function initCancel() {
@@ -350,67 +475,67 @@
             style ? style : ""
           }>${cellValue}</button>`;
         }
+
         gameBoard.empty().append(htmlString);
-        gameBoard
-          .find(".cell")
-          .off("click")
-          .on("click", (event) => {
-            const currentCell = $(event.target);
-            if (currentCell.hasClass("currentCell")) {
-              gameBoard.find(".currentCell").removeClass("currentCell");
-              return;
-            }
+
+        const cells = gameBoard.find(".cell");
+
+        cells.off("click").on("click", (event) => {
+          const currentCell = $(event.target);
+          if (currentCell.hasClass("currentCell")) {
             gameBoard.find(".currentCell").removeClass("currentCell");
-            currentCell.addClass("currentCell");
-            const currentPiece = $(".piece.currentPiece");
-            if (currentPiece.length) {
-              animateMove(currentPiece, currentCell);
-              currentCell.text(currentPiece.text());
+            return;
+          }
+          gameBoard.find(".currentCell").removeClass("currentCell");
+          currentCell.addClass("currentCell");
+          const currentPiece = $(".piece.currentPiece");
+          if (currentPiece.length) {
+            animateMove(currentPiece, currentCell);
+            currentCell.text(currentPiece.text());
 
-              currentCell.addClass("candidate");
-              const addedOnePieceAlready =
-                $("#submit").hasClass("haveCandidate");
-              if (!addedOnePieceAlready) {
-                currentCell.addClass("candidateFirstLetter");
-              }
-
-              currentPiece.removeClass("currentPiece");
-              currentPiece.remove();
-              currentCell.removeClass("currentCell");
-              const i = currentCell.data("i");
-              const row = Math.floor(i / 15);
-              const column = i % 15;
-              const validColumn = `:nth-of-type(15n+${column + 1})`;
-              const validRow = `:nth-of-type(n+${
-                1 + row * 15
-              }):not(:nth-of-type(n+${16 + row * 15}))`;
-              if (addedOnePieceAlready) {
-                // handle adding only a row XOR a column
-                const firstCandidate = gameBoard.find(".candidateFirstLetter");
-                const firstCandidateI = firstCandidate.data("i");
-                const firstCandidateRow = Math.floor(firstCandidateI / 15);
-                const firstCandidateColumn = firstCandidateI % 15;
-                const isInSameRow = row === firstCandidateRow;
-                const isInSameColumn = column === firstCandidateColumn;
-                if (isInSameRow) {
-                  dynamicStyle.text(
-                    `.cell:not(${validRow}) { pointer-events: none; opacity: 0.5; }`
-                  );
-                } else if (isInSameColumn) {
-                  dynamicStyle.text(
-                    `.cell:not(${validColumn}) { pointer-events: none; opacity: 0.5; }`
-                  );
-                }
-              } else {
-                // first piece placed lets you place next in a row or a column
-                dynamicStyle.text(
-                  `.cell:not(${validColumn}):not(${validRow}) { pointer-events: none; opacity: 0.5; }`
-                );
-                submit.text("submit?").addClass("haveCandidate");
-                cancel.text("cancel?").addClass("haveCandidate");
-              }
+            currentCell.addClass("candidate");
+            const addedOnePieceAlready = $("#submit").hasClass("haveCandidate");
+            if (!addedOnePieceAlready) {
+              currentCell.addClass("candidateFirstLetter");
             }
-          });
+
+            currentPiece.removeClass("currentPiece");
+            currentPiece.remove();
+            currentCell.removeClass("currentCell");
+            const i = currentCell.data("i");
+            const row = getRowIndex(i);
+            const column = getColumnIndex(i);
+            const validColumn = `:nth-of-type(15n+${column + 1})`;
+            const validRow = `:nth-of-type(n+${
+              1 + row * 15
+            }):not(:nth-of-type(n+${16 + row * 15}))`;
+            if (addedOnePieceAlready) {
+              // handle adding only a row XOR a column
+              const firstCandidate = gameBoard.find(".candidateFirstLetter");
+              const firstCandidateI = firstCandidate.data("i");
+              const firstCandidateRow = getRowIndex(firstCandidateI);
+              const firstCandidateColumn = getColumnIndex(firstCandidateI);
+              const isInSameRow = row === firstCandidateRow;
+              const isInSameColumn = column === firstCandidateColumn;
+              if (isInSameRow) {
+                dynamicStyle.text(
+                  `.cell:not(${validRow}) { pointer-events: none; opacity: 0.5; }`
+                );
+              } else if (isInSameColumn) {
+                dynamicStyle.text(
+                  `.cell:not(${validColumn}) { pointer-events: none; opacity: 0.5; }`
+                );
+              }
+            } else {
+              // first piece placed lets you place next in a row or a column
+              dynamicStyle.text(
+                `.cell:not(${validColumn}):not(${validRow}) { pointer-events: none; opacity: 0.5; }`
+              );
+              submit.text("submit?").addClass("haveCandidate");
+              cancel.text("cancel?").addClass("haveCandidate");
+            }
+          }
+        });
       }
 
       function animateMove(
@@ -459,6 +584,9 @@
       }
 
       async function getWordData(word) {
+        if (isProfanity(word)) {
+          return { isValid: false, firstDefinition: "" };
+        }
         const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
         return await fetch(url)
           .then((x) => x.json())
@@ -499,6 +627,8 @@
             setupRealtimeUpdatesForGameDoc(gameDoc.ref);
           } else {
             console.log("No game found with the custom ID: ", customId);
+            gameId.val("");
+            location.reload();
           }
         } catch (error) {
           console.error("Error fetching game by custom ID: ", error);
@@ -513,6 +643,8 @@
             initGameBoard();
           } else {
             console.log("Could not set up real-time updates for a game doc.");
+            gameId.val("");
+            location.reload();
           }
         });
       }
@@ -540,8 +672,11 @@
       }
 
       function getRandomId() {
-        // TODO: guarantee unique? otherwise use long firebase string
-        return getDayOfYear() + String(new Date().getTime()).slice(-5);
+        // assumes people likely won't create a new game a year later at the exact same millisecond
+        // this is just a toy project
+        return (
+          String(getDayOfYear()) + String(getMillisecondsSinceStartOfDay())
+        );
       }
 
       function getDayOfYear() {
@@ -554,6 +689,15 @@
         const oneDay = 1000 * 60 * 60 * 24;
         const dayOfYear = Math.floor(diff / oneDay);
         return dayOfYear;
+      }
+
+      function getMillisecondsSinceStartOfDay() {
+        const dayStart = new Date();
+        dayStart.setHours(0);
+        dayStart.setMinutes(0);
+        dayStart.setSeconds(0);
+        dayStart.setMilliseconds(0);
+        return new Date().getTime() - dayStart.getTime();
       }
 
       async function updateGame(currentGameFirebaseId, gameBoard, whoseTurn) {
@@ -606,6 +750,15 @@
         } catch (error) {
           console.error(error);
         }
+      }
+
+      const wordsToBlock = new Set(
+        "YWNyb3RvbW9waGlsaWE=|YW5hbA==|YW5pbGluZ3Vz|YW51cw==|YXJzZWhvbGU=|YXNz|YXNzaG9sZQ==|YXNzbXVuY2g=|YXV0b2Vyb3RpYw==|YXV0b2Vyb3RpYw==|YmFiZWxhbmQ=|YmFieWJhdHRlcg==|YmFsbGdhZw==|YmFsbGdyYXZ5|YmFsbGtpY2tpbmc=|YmFsbGxpY2tpbmc=|YmFsbHNhY2s=|YmFsbHN1Y2tpbmc=|YmFuZ2Jyb3M=|YmFyZWJhY2s=|YmFyZWx5bGVnYWw=|YmFyZW5ha2Vk|YmFzdGFyZG8=|YmFzdGluYWRv|YmJ3|YmRzbQ==|YmVhdmVyY2xlYXZlcg==|YmVhdmVybGlwcw==|YmVzdGlhbGl0eQ==|YmljdXJpb3Vz|YmlnYmxhY2s=|YmlnYnJlYXN0cw==|Ymlna25vY2tlcnM=|YmlndGl0cw==|YmltYm9z|YmlyZGxvY2s=|Yml0Y2g=|YmxhY2tjb2Nr|YmxvbmRlYWN0aW9u|YmxvbmRlb25ibG9uZGVhY3Rpb24=|Ymxvd2o=|Ymxvd3lvdXJs|Ymx1ZXdhZmZsZQ==|Ymx1bXBraW4=|Ym9sbG9ja3M=|Ym9uZGFnZQ==|Ym9uZXI=|Ym9vYg==|Ym9vYnM=|Ym9vdHljYWxs|YnJvd25zaG93ZXJz|YnJ1bmV0dGVhY3Rpb24=|YnVra2FrZQ==|YnVsbGR5a2U=|YnVsbGV0dmliZQ==|YnVuZ2hvbGU=|YnVuZ2hvbGU=|YnVzdHk=|YnV0dA==|YnV0dGNoZWVrcw==|YnV0dGhvbGU=|Y2FtZWx0b2U=|Y2FtZ2lybA==|Y2Ftc2x1dA==|Y2Ftd2hvcmU=|Y2FycGV0bXVuY2hlcg==|Y2FycGV0bXVuY2hlcg==|Y2hvY29sYXRlcm9zZWJ1ZHM=|Y2lyY2xlamVyaw==|Y2xldmVsYW5kc3RlYW1lcg==|Y2xpdA==|Y2xpdG9yaXM=|Y2xvdmVyY2xhbXBz|Y2x1c3RlcmZ1Y2s=|Y29jaw==|Y29ja3M=|Y29wcm9sYWduaWE=|Y29wcm9waGlsaWE=|Y29ybmhvbGU=|Y3Vt|Y3VtbWluZw==|Y3VubmlsaW5ndXM=|Y3VudA==|ZGFya2ll|ZGF0ZXJhcGU=|ZGF0ZXJhcGU=|ZGVlcHRocm9hdA==|ZGVlcHRocm9hdA==|ZGljaw==|ZGlsZG8=|ZGlydHlwaWxsb3dz|ZGlydHlzYW5jaGV6|ZG9nc3R5bGU=|ZG9nZ2llc3R5bGU=|ZG9nZ2llc3R5bGU=|ZG9nZ3lzdHlsZQ==|ZG9nZ3lzdHlsZQ==|ZG9sY2V0dA==|ZG9taW5hdGlvbg==|ZG9taW5hdHJpeA==|ZG9tbWVz|ZG9ua2V5cHVuY2g=|ZG91YmxlZG9uZw==|ZG91YmxlcGVuZXRyYXRpb24=|ZHBhY3Rpb24=|ZWF0bXlhc3M=|ZWNjaGk=|ZWphY3VsYXRpb24=|ZXJvdGlj|ZXJvdGlzbQ==|ZXNjb3J0|ZXRoaWNhbHNsdXQ=|ZXVudWNo|ZmFnZ290|ZmVjYWw=|ZmVsY2g=|ZmVsbGF0aW8=|ZmVsdGNo|ZmVtYWxlc3F1aXJ0aW5n|ZmVtZG9t|ZmlnZ2luZw==|ZmluZ2VyaW5n|ZmlzdGluZw==|Zm9vdGZldGlzaA==|Zm9vdGpvYg==|ZnJvdHRpbmc=|ZnVjaw==|ZnVja2J1dHRvbnM=|ZnVkZ2VwYWNrZXI=|ZnVkZ2VwYWNrZXI=|ZnV0YW5hcmk=|Zy1zcG90|Z2FuZ2Jhbmc=|Z2F5c2V4|Z2VuaXRhbHM=|Z2lhbnRjb2Nr|Z2lybG9u|Z2lybG9udG9w|Z2lybHNnb25ld2lsZA==|Z29hdGN4|Z29hdHNl|Z29ra3Vu|Z29sZGVuc2hvd2Vy|Z29vZ2lybA==|Z29vZHBvb3A=|Z29yZWdhc20=|Z3JvcGU=|Z3JvdXBzZXg=|Z3Vybw==|aGFuZGpvYg==|aGFuZGpvYg==|aGFyZGNvcmU=|aGFyZGNvcmU=|aGVudGFp|aG9tb2Vyb3RpYw==|aG9ua2V5|aG9va2Vy|aG90Y2hpY2s=|aG93dG9raWxs|aG93dG9tdXJkZXI=|aHVnZWZhdA==|aHVtcGluZw==|aW5jZXN0|aW50ZXJjb3Vyc2U=|amFja29mZg==|amFpbGJhaXQ=|amFpbGJhaXQ=|amVya29mZg==|amlnYWJvbw==|amlnZ2Fib28=|amlnZ2VyYm9v|aml6eg==|anVnZ3M=|a2lrZQ==|a2luYmFrdQ==|a2lua3N0ZXI=|a2lua3k=|a25vYmJpbmc=|bGVhdGhlcnJlc3RyYWludA==|bGVhdGhlcnN0cmFpZ2h0amFja2V0|bGVtb25wYXJ0eQ==|bG9saXRh|bG92ZW1ha2luZw==|bWFrZW1lY29tZQ==|bWFsZXNxdWlydGluZw==|bWFzdHVyYmF0ZQ==|bWVuYWdlYXRyb2lz|bWlsZg==|bWlzc2lvbmFyeXBvc2l0aW9u|bW90aGVyZnVja2Vy|bW91bmRvZnZlbnVz|bXJoYW5kcw==|bXVmZmRpdmVy|bXVmZmRpdmluZw==|bmFtYmxh|bmF3YXNoaQ==|bmVncm8=|bmVvbmF6aQ==|bmlnbm9n|bmlnZ2E=|bmlnZ2Vy|bmltcGhvbWFuaWE=|bmlwcGxl|bmlwcGxlcw==|bnNmd2ltYWdlcw==|bnVkZQ==|bnVkaXR5|bnltcGhv|bnltcGhvbWFuaWE=|b2N0b3B1c3N5|b21vcmFzaGk=|b25lY3VwdHdvZ2lybHM=|b25lZ3V5b25lamFy|b3JnYXNt|b3JneQ==|cGFlZG9waGlsZQ==|cGFudGllcw==|cGFudHk=|cGVkb2JlYXI=|cGVkb3BoaWxl|cGVnZ2luZw==|cGVuaXM=|cGhvbmVzZXg=|cGllY2VvZnNoaXQ=|cGlzc3BpZw==|cGlzc2luZw==|cGlzc3BpZw==|cGxheWJveQ==|cGxlYXN1cmVjaGVzdA==|cG9sZXNtb2tlcg==|cG9ueXBsYXk=|cG9vZg==|cG9vcGNodXRl|cG9vcGNodXRl|cG9ybg==|cG9ybm8=|cG9ybm9ncmFwaHk=|cHJpbmNlYWxiZXJ0cGllcmNpbmc=|cHRoYw==|cHViZXM=|cHVzc3k=|cXVlYWY=|cmFnaGVhZA==|cmFnaW5nYm9uZXI=|cmFwZQ==|cmFwaW5n|cmFwaXN0|cmVjdHVt|cmV2ZXJzZWNvd2dpcmw=|cmltam9i|cmltbWluZw==|cm9zeXBhbG0=|cnVzdHl0cm9tYm9uZQ==|cyZt|c2FkaXNt|c2NhdA==|c2NobG9uZw==|c2Npc3NvcmluZw==|c2VtZW4=|c2V4|c2V4bw==|c2V4eQ==|c2hhdmVkYmVhdmVy|c2hhdmVkcHVzc3k=|c2hlbWFsZQ==|c2hpYmFyaQ==|c2hpdA==|c2hvdGE=|c2hyaW1waW5n|c2xhbnRleWU=|c2x1dA==|c211dA==|c25hdGNo|c25vd2JhbGxpbmc=|c29kb21pemU=|c29kb215|c3BpYw==|c3Bvb2dl|c3ByZWFkbGVncw==|c3RyYXBvbg==|c3RyYXBvbg==|c3RyYXBwYWRv|c3RyaXBjbHVi|c3R5bGVkb2dneQ==|c3Vjaw==|c3Vja3M=|c3VpY2lkZWdpcmxz|c3VsdHJ5d29tZW4=|c3dhc3Rpa2E=|c3dpbmdlcg==|dGFpbnRlZGxvdmU=|dGFzdGVteQ==|dGVhYmFnZ2luZw==|dGhyZWVzb21l|dGhyb2F0aW5n|dGllZHVw|dGlnaHR3aGl0ZQ==|dGl0|dGl0cw==|dGl0dGllcw==|dGl0dHk=|dG9uZ3VlaW5h|dG9wbGVzcw==|dG9zc2Vy|dG93ZWxoZWFk|dHJhbm55|dHJpYmFkaXNt|dHViZ2lybA==|dHViZ2lybA==|dHVzaHk=|dHdhdA==|dHdpbms=|dHdpbmtpZQ==|dHdvZ2lybHNvbmVjdXA=|dW5kcmVzc2luZw==|dXBza2lydA==|dXJldGhyYXBsYXk=|dXJvcGhpbGlh|dmFnaW5h|dmVudXNtb3VuZA==|dmlicmF0b3I=|dmlvbGV0d2FuZA==|dm9yYXJlcGhpbGlh|dm95ZXVy|dnVsdmE=|d2Fuaw==|d2V0ZHJlYW0=|d2V0YmFjaw==|d2hpdGVwb3dlcg==|d29tZW5yYXBwaW5n|d3JhcHBpbmdtZW4=|d3JpbmtsZWRzdGFyZmlzaA==|eHg=|eHh4|eWFvaQ==|eWVsbG93c2hvd2Vycw==|eWlmZnk=|em9vcGhpbGlh"
+          .split("|")
+          .map((x) => atob(x))
+      );
+      function isProfanity(word) {
+        return wordsToBlock.has(word.toLowerCase());
       }
     </script>
   </body>
