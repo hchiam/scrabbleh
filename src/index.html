@@ -457,7 +457,7 @@
           .then((x) => x.json())
           .then((x) => {
             const errorTitle = "No Definitions Found";
-            const foundEntry = !("title" in x) && !x.title.includes(errorTitle);
+            const foundEntry = !("title" in x && x.title.includes(errorTitle));
             const firstDefinition = foundEntry
               ? `First definition:  \n${x[0].meanings[0].definitions[0].definition}`
               : "";
