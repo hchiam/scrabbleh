@@ -46,6 +46,9 @@
           animation: haveCandidate 1s infinite alternate;
         }
       }
+      #gameId {
+        width: 12ch;
+      }
       .cell.candidate {
         outline-width: calc(var(--grid-gap) / 2);
       }
@@ -255,6 +258,10 @@
               `Word not found by the free dictionary API. \nHit cancel to try again. \n\n"${candidateLetterChain}"`
             );
             return;
+          } else {
+            alert(
+              `Word accepted. \n\nFirst definition: ${wordData.firstDefinition}`
+            );
           }
 
           // actually submit:
@@ -459,7 +466,7 @@
             const errorTitle = "No Definitions Found";
             const foundEntry = !("title" in x && x.title.includes(errorTitle));
             const firstDefinition = foundEntry
-              ? `First definition:  \n${x[0].meanings[0].definitions[0].definition}`
+              ? x[0].meanings[0].definitions[0].definition
               : "";
             return { isValid: foundEntry, firstDefinition: firstDefinition };
           });
