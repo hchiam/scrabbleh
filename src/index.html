@@ -199,11 +199,28 @@
 
       window.onload = function initializeOnLoad() {
         // setupRealtimeUpdates(); // TODO
-        // initSubmit();
+        initSubmit();
         initCancel();
         initPieces(Object.keys(allPieces).slice(0, 7));
         initGameBoard();
       };
+
+      function initSubmit() {
+        submit.on("click", () => {
+          const candidateRowOrColumn = [...$(".cell")].filter(
+            (el) => $(el).css("opacity") !== "0.5"
+          );
+          const candidateLetters = candidateRowOrColumn.map(
+            (el) => $(el).text() || " "
+          );
+          const candidateWord = candidateLetters.join("").trim();
+          if (candidateWord.includes(" ")) {
+            alert(`The letters must form a chain. \nHit cancel to try again.`);
+            return;
+          }
+          // TODO: actually submit
+        });
+      }
 
       function initCancel() {
         cancel.on("click", () => {
