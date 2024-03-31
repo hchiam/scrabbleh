@@ -4,26 +4,115 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>scrabbleh</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/hchiam/css-boilerplate@7.0.0/style.css"
+      integrity="sha384-4LyMgnYb2AiZtfGx9DmU1yIah53F9unFaCNv8tmbRTycOKKEfY1VleH71ezkUOT8"
+      crossorigin="anonymous"
+    />
     <style>
+      :root {
+        --cell-size: max(5vmin, 3rem);
+        --grid-gap: 2px;
+        --z-submitContainer: 3;
+        --z-piece: 2;
+        --z-cell-focused: 1;
+      }
+      body {
+        padding-block-start: 1rem;
+        padding-block-end: 2rem;
+        padding-inline: 1rem;
+        max-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+      }
+      button {
+        cursor: pointer;
+      }
+      #submitContainer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        padding: 1rem;
+        z-index: var(--z-submitContainer);
+        display: flex;
+        gap: 1rem;
+      }
+      #submit.haveCandidate,
+      #cancel.haveCandidate,
+      .cell.candidate {
+        outline: var(--grid-gap) solid var(--accent-colour);
+        @media (prefers-reduced-motion: no-preference) {
+          animation: haveCandidate 1s infinite alternate;
+        }
+      }
+      .cell.candidate {
+        outline-width: calc(var(--grid-gap) / 2);
+      }
+      @keyframes haveCandidate {
+        to {
+          background: maroon;
+          color: white;
+        }
+      }
+      #pieces {
+        margin-block-start: 2.5rem; /* so #submitContainer doesn't cover top */
+        margin-block-end: 1rem;
+      }
+      .piece {
+        width: var(--cell-size);
+        height: var(--cell-size);
+        margin: var(--grid-gap);
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        z-index: var(--z-piece);
+      }
+      .piece.currentPiece {
+        background: var(--accent-colour);
+        color: black;
+      }
       #gameBoard {
         display: grid;
-        grid-template-columns: repeat(15, 20px);
-        grid-gap: 1px;
+        grid-template-columns: repeat(15, var(--cell-size));
+        grid-gap: var(--grid-gap);
+        overflow: auto;
       }
       .cell {
-        width: 20px;
-        height: 20px;
-        background-color: #f0f0f0;
+        width: var(--cell-size);
+        height: var(--cell-size);
+        background: var(--background, #978967);
+        color: var(--color, #fff);
+        border-radius: 0;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
         text-align: center;
         vertical-align: middle;
-        line-height: 20px;
+        line-height: var(--cell-size);
         font-size: 14px;
+        font-weight: bold;
+        outline: calc(var(--grid-gap) / 2) solid white;
+      }
+      .cell:focus,
+      .cell:hover {
+        background: lightgrey !important;
+        color: black !important;
+        box-shadow: 0 0 20px black;
+        z-index: var(--z-cell-focused);
+      }
+      .cell.currentCell {
+        background: var(--accent-colour) !important;
+        color: black !important;
+      }
+      .cell:not(:empty) {
+        background: rgb(50, 50, 50);
+        color: white;
+        pointer-events: none;
       }
     </style>
-  </head>
-  <body>
-    <div id="gameBoard"></div>
-
+    <style id="dynamicStyle"></style>
     <script
       type="module"
       src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"
@@ -32,49 +121,277 @@
       type="module"
       src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"
     ></script>
-    <script src="https://unpkg.com/compromise"></script>
-
+    <script
+      src="https://code.jquery.com/jquery-3.7.1.min.js"
+      integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <div id="submitContainer1">
+      <button id="submit">submit</button>
+      <button id="cancel">cancel</button>
+    </div>
+    <div id="pieces"></div>
+    <div id="gameBoard"></div>
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-      import { getFirestore } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+      import {
+        getFirestore,
+        collection,
+        getDocs,
+      } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
 
       const firebaseConfig = {
-        // TODO
+        projectId: "scrabbleh-57234",
       };
-
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
+      const red = new Set([0, 7, 14, 105, 119, 210, 217, 224]);
+      const pink = new Set([
+        16, 32, 48, 64, 28, 42, 56, 70, 196, 182, 168, 154, 208, 192, 176, 160,
+      ]);
+      const yellow = new Set([112]);
+      const lightBlue = new Set([
+        3, 11, 36, 38, 45, 52, 59, 92, 96, 98, 102, 108, 116, 122, 126, 128,
+        132, 165, 172, 179, 186, 188, 213, 221,
+      ]);
+      const cornflowerBlue = new Set([
+        20, 24, 76, 80, 84, 88, 136, 140, 144, 148, 200, 204,
+      ]);
+      const allPieces = {
+        "?": 2,
+        E: 12,
+        A: 9,
+        I: 9,
+        O: 8,
+        N: 6,
+        R: 6,
+        T: 6,
+        L: 4,
+        S: 4,
+        U: 4,
+        D: 4,
+        G: 3,
+        B: 2,
+        C: 2,
+        M: 2,
+        P: 2,
+        F: 2,
+        H: 2,
+        V: 2,
+        W: 2,
+        Y: 2,
+        K: 1,
+        J: 1,
+        X: 1,
+        Q: 1,
+        Z: 1,
+      };
+      const dynamicStyle = $("#dynamicStyle");
+      const cancel = $("#cancel");
+      const submit = $("#submit");
+      const pieces = $("#pieces");
+      const gameBoard = $("#gameBoard");
 
-      function initGameBoard() {
-        const boardSize = 15;
-        const gameBoard = document.getElementById("gameBoard");
-        for (let i = 0; i < boardSize * boardSize; i++) {
-          const cell = document.createElement("div");
-          cell.classList.add("cell");
-          gameBoard.appendChild(cell);
-          // TODO: events
-        }
+      window.onload = function initializeOnLoad() {
+        // setupRealtimeUpdates(); // TODO
+        // initSubmit();
+        initCancel();
+        initPieces(Object.keys(allPieces).slice(0, 7));
+        initGameBoard();
+      };
+
+      function initCancel() {
+        cancel.on("click", () => {
+          cancel.add(submit).removeClass("haveCandidate");
+          submit.text("submit");
+          cancel.text("cancel");
+          const candidateLetterCells = gameBoard.find(".candidate");
+          const candidateLetters = candidateLetterCells.text().split("");
+          candidateLetterCells.each((i, el) => $(el).text(""));
+          initPieces(candidateLetters);
+          dynamicStyle.text("");
+          gameBoard
+            .find(".candidateFirstLetter, .candidate")
+            .removeClass("candidateFirstLetter")
+            .removeClass("candidate");
+        });
       }
 
-      function validateWord(word) {
-        const doc = nlp(word);
-        console.log("Valid word?", word);
-        return doc.has("#Noun");
-      }
-
-      function setupRealtimeUpdates() {
-        db.collection("games")
-          .doc("yourGameId")
-          .onSnapshot((doc) => {
-            console.log("Current data: ", doc.data());
-            // TODO: update game state based on changes
+      function initPieces(lettersToAdd) {
+        let htmlString = "";
+        lettersToAdd.forEach((letter, count) => {
+          htmlString += `<button class="piece">${letter}</button>`;
+        });
+        pieces.append(htmlString);
+        pieces
+          .find(".piece")
+          .off("click")
+          .on("click", (event) => {
+            const currentPiece = $(event.target);
+            if (currentPiece.hasClass("currentPiece")) {
+              pieces.find(".currentPiece").removeClass("currentPiece");
+            } else {
+              pieces.find(".currentPiece").removeClass("currentPiece");
+              currentPiece.addClass("currentPiece");
+            }
+            gameBoard.find(".currentCell").removeClass("currentCell");
           });
       }
 
-      window.onload = function init() {
-        initGameBoard();
-        // setupRealtimeUpdates(); // TODO
-      };
+      function initGameBoard() {
+        const boardSize = 15;
+        let htmlString = "";
+        for (let i = 0; i < boardSize * boardSize; i++) {
+          let style = "";
+          if (red.has(i)) {
+            style = `style="--background:red;--color:white;"`;
+          } else if (pink.has(i)) {
+            style = `style="--background:pink;--color:black;"`;
+          } else if (yellow.has(i)) {
+            style = `style="--background:yellow;--color:black;"`;
+          } else if (lightBlue.has(i)) {
+            style = `style="--background:lightBlue;--color:black;"`;
+          } else if (cornflowerBlue.has(i)) {
+            style = `style="--background:cornflowerBlue;--color:white;"`;
+          }
+          htmlString += `<button data-i="${i}" class="cell" ${
+            style ? style : ""
+          }></button>`;
+        }
+        gameBoard.append(htmlString);
+        gameBoard.find(".cell").on("click", (event) => {
+          const currentCell = $(event.target);
+          if (currentCell.hasClass("currentCell")) {
+            gameBoard.find(".currentCell").removeClass("currentCell");
+            return;
+          }
+          gameBoard.find(".currentCell").removeClass("currentCell");
+          currentCell.addClass("currentCell");
+          const currentPiece = $(".piece.currentPiece");
+          if (currentPiece.length) {
+            animateMove(currentPiece, currentCell);
+            currentCell.text(currentPiece.text());
+
+            currentCell.addClass("candidate");
+            const addedOnePieceAlready = $("#submit").hasClass("haveCandidate");
+            if (!addedOnePieceAlready) {
+              currentCell.addClass("candidateFirstLetter");
+            }
+
+            currentPiece.removeClass("currentPiece");
+            currentPiece.remove();
+            currentCell.removeClass("currentCell");
+            const i = currentCell.data("i");
+            const row = Math.floor(i / 15);
+            const column = i % 15;
+            const validColumn = `:nth-of-type(15n+${column + 1})`;
+            const validRow = `:nth-of-type(n+${
+              1 + row * 15
+            }):not(:nth-of-type(n+${16 + row * 15}))`;
+            if (addedOnePieceAlready) {
+              // handle adding only a row XOR a column
+              const firstCandidate = gameBoard.find(".candidateFirstLetter");
+              const firstCandidateI = firstCandidate.data("i");
+              const firstCandidateRow = Math.floor(firstCandidateI / 15);
+              const firstCandidateColumn = firstCandidateI % 15;
+              const isInSameRow = row === firstCandidateRow;
+              const isInSameColumn = column === firstCandidateColumn;
+              if (isInSameRow) {
+                dynamicStyle.text(
+                  `.cell:not(${validRow}) { pointer-events: none; opacity: 0.5; }`
+                );
+              } else if (isInSameColumn) {
+                dynamicStyle.text(
+                  `.cell:not(${validColumn}) { pointer-events: none; opacity: 0.5; }`
+                );
+              }
+            } else {
+              // first piece placed lets you place next in a row or a column
+              dynamicStyle.text(
+                `.cell:not(${validColumn}):not(${validRow}) { pointer-events: none; opacity: 0.5; }`
+              );
+              submit.text("submit?").addClass("haveCandidate");
+              cancel.text("cancel?").addClass("haveCandidate");
+            }
+          }
+        });
+      }
+
+      function animateMove(
+        originElement,
+        destinationElement,
+        animationTime = 100
+      ) {
+        destinationElement.css("visibility", "hidden");
+        const original = $(originElement);
+        const originalMarginLeft = parseInt(original.css("marginLeft"));
+        const originalMarginTop = parseInt(original.css("marginTop"));
+        const originPosition = original.position();
+        originPosition.left = originPosition.left + originalMarginLeft;
+        originPosition.top = originPosition.top + originalMarginTop;
+        const originalWidth = original.outerWidth();
+        const originalHeight = original.outerHeight();
+        const destinationPosition = $(destinationElement).position();
+        const destinationWidth = $(destinationElement).outerWidth();
+        const destinationHeight = $(destinationElement).outerHeight();
+        const temp = original.clone();
+        $("body").append(temp).prop("inert", true);
+        temp.addClass("temp");
+        temp.addClass("disable-hover").find("*").css({ pointerEvents: "none" });
+        temp
+          .css({
+            position: "fixed",
+            zIndex: 1,
+            width: originalWidth,
+            height: originalHeight,
+          })
+          .offset(originPosition)
+          .animate(
+            {
+              left: destinationPosition.left,
+              top: destinationPosition.top,
+              width: destinationWidth,
+              height: "auto", // destinationHeight,
+            },
+            animationTime
+          );
+        setTimeout(() => {
+          temp.remove();
+          $(destinationElement).css("visibility", "visible");
+          $("body").prop("inert", false);
+        }, animationTime * 10);
+      }
+
+      async function getWordData(word) {
+        const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
+        return await fetch(url)
+          .then((x) => x.json())
+          .then((x) => {
+            const errorTitle = "No Definitions Found";
+            const foundEntry = !("title" in x) || x.title.includes(errorTitle);
+            const firstDefinition = foundEntry
+              ? `First definition:  \n${x[0].meanings[0].definitions[0].definition}`
+              : "";
+            return { isValid: foundEntry, firstDefinition: firstDefinition };
+          });
+      }
+
+      async function setupRealtimeUpdates() {
+        // const gamesCol = collection(db, "games");
+        // const gameSnapshot = await getDocs(gamesCol);
+        // console.log("gameSnapshot", gameSnapshot);
+        // const gameInfo = gameSnapshot.docs.map((doc) => doc.data());
+        // console.log("gameInfo", gameInfo);
+        //
+        // collection(db, "games")
+        //   .doc("yourGameId")
+        //   .onSnapshot((doc) => {
+        //     console.log("Current data: ", doc.data());
+        //     // TODO: update game state based on changes
+        //   });
+      }
     </script>
   </body>
 </html>

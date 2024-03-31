@@ -1,10 +1,11 @@
 {
   "name": "scrabbleh",
-  "license": "MIT",
   "scripts": {
+    "r": "yarn dev",
     "start": "yarn dev",
     "dev": "open src/index.html",
+    "d": "yarn deploy",
     "surge": "yarn deploy",
-    "deploy": "surge src https://scrabbleh.surge.sh; open https://scrabbleh.surge.sh"
+    "deploy": "surge src https://scrabbleh.surge.sh"
   }
 }
