@@ -30,13 +30,13 @@
         cursor: pointer;
       }
       #submitContainer {
-        position: fixed;
+        /* position: fixed;
         top: 0;
         left: 0;
         padding: 1rem;
         z-index: var(--z-submitContainer);
         display: flex;
-        gap: 1rem;
+        gap: 1rem; */
       }
       #submit.haveCandidate,
       #cancel.haveCandidate,
@@ -56,7 +56,8 @@
         }
       }
       #pieces {
-        margin-block-start: 2.5rem; /* so #submitContainer doesn't cover top */
+        /*margin-block-start: 2.5rem;*/ /* so #submitContainer doesn't cover top */
+        margin-block-start: 1rem;
         margin-block-end: 1rem;
       }
       .piece {
@@ -118,11 +119,11 @@
     <style id="dynamicStyle"></style>
     <script
       type="module"
-      src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"
+      src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js"
     ></script>
     <script
       type="module"
-      src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"
+      src="https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js"
     ></script>
     <script
       src="https://code.jquery.com/jquery-3.7.1.min.js"
@@ -131,25 +132,53 @@
     ></script>
   </head>
   <body>
-    <div id="submitContainer1">
+    <div id="submitContainer">
       <button id="submit">submit</button>
       <button id="cancel">cancel</button>
+      <input id="gameId" placeholder="game ID" value="9117496" />
     </div>
     <div id="pieces"></div>
     <div id="gameBoard"></div>
     <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+      // TODO: Add SDKs for Firebase products that you want to use
+      // https://firebase.google.com/docs/web/setup#available-libraries
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+      // import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-analytics.js";
       import {
         getFirestore,
         collection,
+        addDoc,
+        query,
+        where,
         getDocs,
-      } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+        onSnapshot,
+        doc,
+        updateDoc,
+        // connectFirestoreEmulator,
+      } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
       const firebaseConfig = {
+        apiKey: "AIzaSyBupDhYe5qrcd6WRqa1Pek1XDIq-xFzBDE",
+        authDomain: "scrabbleh-57234.firebaseapp.com",
         projectId: "scrabbleh-57234",
+        storageBucket: "scrabbleh-57234.appspot.com",
+        messagingSenderId: "398177698307",
+        appId: "1:398177698307:web:294e7448a71edab2040436",
+        measurementId: "G-0297WR3Q99",
       };
+
+      // Initialize Firebase
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
+      // if (
+      //   location.hostname === "127.0.0.1" ||
+      //   location.hostname === "localhost"
+      // ) {
+      //   console.log("Trying to connect to emulator...");
+      //   connectFirestoreEmulator(db, "127.0.0.1", 8000);
+      // }
+
       const red = new Set([0, 7, 14, 105, 119, 210, 217, 224]);
       const pink = new Set([
         16, 32, 48, 64, 28, 42, 56, 70, 196, 182, 168, 154, 208, 192, 176, 160,
@@ -192,13 +221,17 @@
         Z: 1,
       };
       const dynamicStyle = $("#dynamicStyle");
-      const cancel = $("#cancel");
       const submit = $("#submit");
+      const cancel = $("#cancel");
+      const gameId = $("#gameId");
       const pieces = $("#pieces");
       const gameBoard = $("#gameBoard");
 
-      window.onload = function initializeOnLoad() {
-        // setupRealtimeUpdates(); // TODO
+      let currentGameFirebaseId = "";
+      let gameBoardString = " ".repeat(15 * 15);
+
+      window.onload = async function initializeOnLoad() {
+        await setupRealtimeUpdates();
         initSubmit();
         initCancel();
         initPieces(Object.keys(allPieces).slice(0, 7));
@@ -206,19 +239,36 @@
       };
 
       function initSubmit() {
-        submit.on("click", () => {
-          const candidateRowOrColumn = [...$(".cell")].filter(
+        submit.on("click", async () => {
+          const candidateRowOrColumn = [...gameBoard.find(".cell")].filter(
             (el) => $(el).css("opacity") !== "0.5"
           );
           const candidateLetters = candidateRowOrColumn.map(
             (el) => $(el).text() || " "
           );
-          const candidateWord = candidateLetters.join("").trim();
-          if (candidateWord.includes(" ")) {
-            alert(`The letters must form a chain. \nHit cancel to try again.`);
+          const candidateLetterChain = candidateLetters.join("").trim();
+          if (candidateLetterChain.includes(" ")) {
+            alert(
+              `The letters must form a chain. \nHit cancel to try again. \n\n"${candidateLetterChain}"`
+            );
             return;
           }
-          // TODO: actually submit
+
+          // actually submit:
+          gameBoardString = [...gameBoard.find(".cell")]
+            .map((x) => $(x).text() || " ")
+            .join("");
+          await updateGame(currentGameFirebaseId, gameBoardString, "myTurn");
+
+          dynamicStyle.text("");
+          gameBoard
+            .find(".candidateFirstLetter, .candidate")
+            .removeClass("candidateFirstLetter")
+            .removeClass("candidate");
+
+          cancel.add(submit).removeClass("haveCandidate");
+          submit.text("submit");
+          cancel.text("cancel");
         });
       }
 
@@ -261,9 +311,8 @@
       }
 
       function initGameBoard() {
-        const boardSize = 15;
         let htmlString = "";
-        for (let i = 0; i < boardSize * boardSize; i++) {
+        for (let i = 0; i < gameBoardString.length; i++) {
           let style = "";
           if (red.has(i)) {
             style = `style="--background:red;--color:white;"`;
@@ -276,9 +325,10 @@
           } else if (cornflowerBlue.has(i)) {
             style = `style="--background:cornflowerBlue;--color:white;"`;
           }
+          const cellValue = gameBoardString[i].trim() ? gameBoardString[i] : "";
           htmlString += `<button data-i="${i}" class="cell" ${
             style ? style : ""
-          }></button>`;
+          }>${cellValue}</button>`;
         }
         gameBoard.append(htmlString);
         gameBoard.find(".cell").on("click", (event) => {
@@ -399,18 +449,98 @@
       }
 
       async function setupRealtimeUpdates() {
-        // const gamesCol = collection(db, "games");
-        // const gameSnapshot = await getDocs(gamesCol);
-        // console.log("gameSnapshot", gameSnapshot);
-        // const gameInfo = gameSnapshot.docs.map((doc) => doc.data());
-        // console.log("gameInfo", gameInfo);
-        //
-        // collection(db, "games")
-        //   .doc("yourGameId")
-        //   .onSnapshot((doc) => {
-        //     console.log("Current data: ", doc.data());
-        //     // TODO: update game state based on changes
-        //   });
+        const gameID = gameId.val();
+        if (gameID) {
+          await fetchGameByCustomId(gameID);
+        } else {
+          currentGameFirebaseId = await createGame();
+        }
+      }
+
+      async function fetchGameByCustomId(customId) {
+        try {
+          const gamesCol = collection(db, "games");
+          const q = query(gamesCol, where("id", "==", customId));
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            // Assuming 'id' is unique, there should only be one doc
+            if (querySnapshot.docs.length > 1) {
+              console.warn("Multiple games found with the same custom ID.");
+            }
+            const gameDoc = querySnapshot.docs[0];
+            const gameData = gameDoc.data();
+            console.log("Game data: ", gameData);
+            currentGameFirebaseId = gameDoc.id;
+            console.log("currentGameFirebaseId", currentGameFirebaseId);
+            gameBoardString = gameData.gameBoard;
+            // Setting up real-time updates for the fetched game
+            setupRealtimeUpdatesForGameDoc(gameDoc.ref);
+          } else {
+            console.log("No game found with the custom ID: ", customId);
+          }
+        } catch (error) {
+          console.error("Error fetching game by custom ID: ", error);
+        }
+      }
+      function setupRealtimeUpdatesForGameDoc(gameDocRef) {
+        onSnapshot(gameDocRef, (docSnapshot) => {
+          if (docSnapshot.exists()) {
+            console.log("Real-time game data: ", docSnapshot.data());
+          } else {
+            console.log("No such document!");
+          }
+        });
+      }
+
+      async function createGame() {
+        try {
+          // Reference to the 'games' collection
+          const gamesCol = collection(db, "games");
+          // Add a new document with Firestore-generated unique ID
+          const gameRef = await addDoc(gamesCol, {
+            id: getRandomId(),
+            createdAt: new Date(),
+            players: [],
+            whoseTurn: "",
+            gameBoard: " ".repeat(15 * 15),
+          });
+          console.log("Game created with ID: ", gameRef.id);
+          return gameRef.id; // Returns the generated game ID
+        } catch (error) {
+          console.error("Error creating game: ", error);
+          alert(error);
+        }
+      }
+
+      function getRandomId() {
+        // TODO: guarantee unique? otherwise use long firebase string
+        return getDayOfYear() + String(new Date().getTime()).slice(-5);
+      }
+
+      function getDayOfYear() {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), 0, 0);
+        const diff =
+          now -
+          start +
+          (start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000;
+        const oneDay = 1000 * 60 * 60 * 24;
+        const dayOfYear = Math.floor(diff / oneDay);
+        return dayOfYear;
+      }
+
+      async function updateGame(currentGameFirebaseId, gameBoard, whoseTurn) {
+        const gameRef = doc(db, "games", currentGameFirebaseId);
+
+        try {
+          await updateDoc(gameRef, {
+            gameBoard: gameBoard,
+            whoseTurn: whoseTurn,
+          });
+          console.log("Game updated successfully");
+        } catch (error) {
+          console.error("Error updating game: ", error);
+        }
       }
     </script>
   </body>
