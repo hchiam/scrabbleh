@@ -4,7 +4,7 @@ scrabble, eh?
 
 https://scrabbleh.surge.sh
 
-## firebase emulators setup
+<!-- ## firebase emulators setup
 
 https://github.com/hchiam/learning-firebase-local-emulator
 
@@ -24,4 +24,4 @@ firebase emulators:start
 
 http://localhost:4000/firestore
 
-http://127.0.0.1:8000/
+http://127.0.0.1:8000/ -->
