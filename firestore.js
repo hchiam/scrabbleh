@@ -4,8 +4,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // match any document in the 'games' collection
     match /games/{gameId} {
-      // allow anyone to join a game
-      allow read: if true;
+      // allow anyone to join a game or delete a game
+      allow read, delete: if true;
       
       // allow anyone to create or update a game but only with valid data
       allow create, write: if isDataValid();
