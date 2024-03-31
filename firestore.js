@@ -2,6 +2,13 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    match /broadcast/{messageId} {
+      // Allow read access to all users
+      allow read: if true;
+      // Restrict write access
+      allow write: if false;
+    }
+    
     // match any document in the 'games' collection
     match /games/{gameId} {
       // allow anyone to join a game or delete a game

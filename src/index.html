@@ -226,6 +226,7 @@
 
       window.onload = async function initializeOnLoad() {
         await setupRealtimeUpdates();
+        listenForBroadcasts();
         initSubmit();
         initCancel();
         goToGameId();
@@ -567,6 +568,31 @@
           );
         } catch (error) {
           console.error("Error deleting game: ", error);
+        }
+      }
+
+      async function listenForBroadcasts() {
+        try {
+          const broadcastCol = collection(db, "broadcast");
+          const q = query(broadcastCol);
+          const querySnapshot = await getDocs(q);
+          const broadcastDoc = querySnapshot.docs[0];
+          onSnapshot(broadcastDoc.ref, (docSnapshot) => {
+            if (docSnapshot.exists()) {
+              const broadcastData = docSnapshot.data();
+              console.log("Real-time broadcast data: ", broadcastData);
+              if (String(broadcastData.message).trim()) {
+                alert(`Broadcast message: \n\n${broadcastData.message}`);
+              }
+            } else {
+              console.log(
+                "Could not set up real-time updates for broadcast doc."
+              );
+            }
+          });
+          // Call unsubscribe() when you no longer want to listen to updates
+        } catch (error) {
+          console.error(error);
         }
       }
     </script>
