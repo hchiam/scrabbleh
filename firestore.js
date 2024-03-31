@@ -16,7 +16,8 @@ service cloud.firestore {
         	&& request.resource.data.createdAt is timestamp
         	&& request.resource.data.players is list
         	&& request.resource.data.whoseTurn is string
-        	&& request.resource.data.gameBoard is string;
+        	&& request.resource.data.gameBoard is string
+          && request.resource.data.gameBoard.size() == 15*15;
       }
 
 			function onlyAllowedFieldsArePresent() {

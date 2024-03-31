@@ -135,7 +135,7 @@
     <div id="submitContainer">
       <button id="submit">submit</button>
       <button id="cancel">cancel</button>
-      <input id="gameId" placeholder="game ID" value="9117496" />
+      <input id="gameId" placeholder="game ID" value="9191207" />
     </div>
     <div id="pieces"></div>
     <div id="gameBoard"></div>
@@ -322,63 +322,67 @@
             style ? style : ""
           }>${cellValue}</button>`;
         }
-        gameBoard.append(htmlString);
-        gameBoard.find(".cell").on("click", (event) => {
-          const currentCell = $(event.target);
-          if (currentCell.hasClass("currentCell")) {
+        gameBoard.empty().append(htmlString);
+        gameBoard
+          .find(".cell")
+          .off("click")
+          .on("click", (event) => {
+            const currentCell = $(event.target);
+            if (currentCell.hasClass("currentCell")) {
+              gameBoard.find(".currentCell").removeClass("currentCell");
+              return;
+            }
             gameBoard.find(".currentCell").removeClass("currentCell");
-            return;
-          }
-          gameBoard.find(".currentCell").removeClass("currentCell");
-          currentCell.addClass("currentCell");
-          const currentPiece = $(".piece.currentPiece");
-          if (currentPiece.length) {
-            animateMove(currentPiece, currentCell);
-            currentCell.text(currentPiece.text());
+            currentCell.addClass("currentCell");
+            const currentPiece = $(".piece.currentPiece");
+            if (currentPiece.length) {
+              animateMove(currentPiece, currentCell);
+              currentCell.text(currentPiece.text());
 
-            currentCell.addClass("candidate");
-            const addedOnePieceAlready = $("#submit").hasClass("haveCandidate");
-            if (!addedOnePieceAlready) {
-              currentCell.addClass("candidateFirstLetter");
-            }
-
-            currentPiece.removeClass("currentPiece");
-            currentPiece.remove();
-            currentCell.removeClass("currentCell");
-            const i = currentCell.data("i");
-            const row = Math.floor(i / 15);
-            const column = i % 15;
-            const validColumn = `:nth-of-type(15n+${column + 1})`;
-            const validRow = `:nth-of-type(n+${
-              1 + row * 15
-            }):not(:nth-of-type(n+${16 + row * 15}))`;
-            if (addedOnePieceAlready) {
-              // handle adding only a row XOR a column
-              const firstCandidate = gameBoard.find(".candidateFirstLetter");
-              const firstCandidateI = firstCandidate.data("i");
-              const firstCandidateRow = Math.floor(firstCandidateI / 15);
-              const firstCandidateColumn = firstCandidateI % 15;
-              const isInSameRow = row === firstCandidateRow;
-              const isInSameColumn = column === firstCandidateColumn;
-              if (isInSameRow) {
-                dynamicStyle.text(
-                  `.cell:not(${validRow}) { pointer-events: none; opacity: 0.5; }`
-                );
-              } else if (isInSameColumn) {
-                dynamicStyle.text(
-                  `.cell:not(${validColumn}) { pointer-events: none; opacity: 0.5; }`
-                );
+              currentCell.addClass("candidate");
+              const addedOnePieceAlready =
+                $("#submit").hasClass("haveCandidate");
+              if (!addedOnePieceAlready) {
+                currentCell.addClass("candidateFirstLetter");
               }
-            } else {
-              // first piece placed lets you place next in a row or a column
-              dynamicStyle.text(
-                `.cell:not(${validColumn}):not(${validRow}) { pointer-events: none; opacity: 0.5; }`
-              );
-              submit.text("submit?").addClass("haveCandidate");
-              cancel.text("cancel?").addClass("haveCandidate");
+
+              currentPiece.removeClass("currentPiece");
+              currentPiece.remove();
+              currentCell.removeClass("currentCell");
+              const i = currentCell.data("i");
+              const row = Math.floor(i / 15);
+              const column = i % 15;
+              const validColumn = `:nth-of-type(15n+${column + 1})`;
+              const validRow = `:nth-of-type(n+${
+                1 + row * 15
+              }):not(:nth-of-type(n+${16 + row * 15}))`;
+              if (addedOnePieceAlready) {
+                // handle adding only a row XOR a column
+                const firstCandidate = gameBoard.find(".candidateFirstLetter");
+                const firstCandidateI = firstCandidate.data("i");
+                const firstCandidateRow = Math.floor(firstCandidateI / 15);
+                const firstCandidateColumn = firstCandidateI % 15;
+                const isInSameRow = row === firstCandidateRow;
+                const isInSameColumn = column === firstCandidateColumn;
+                if (isInSameRow) {
+                  dynamicStyle.text(
+                    `.cell:not(${validRow}) { pointer-events: none; opacity: 0.5; }`
+                  );
+                } else if (isInSameColumn) {
+                  dynamicStyle.text(
+                    `.cell:not(${validColumn}) { pointer-events: none; opacity: 0.5; }`
+                  );
+                }
+              } else {
+                // first piece placed lets you place next in a row or a column
+                dynamicStyle.text(
+                  `.cell:not(${validColumn}):not(${validRow}) { pointer-events: none; opacity: 0.5; }`
+                );
+                submit.text("submit?").addClass("haveCandidate");
+                cancel.text("cancel?").addClass("haveCandidate");
+              }
             }
-          }
-        });
+          });
       }
 
       function animateMove(
@@ -477,7 +481,10 @@
       function setupRealtimeUpdatesForGameDoc(gameDocRef) {
         onSnapshot(gameDocRef, (docSnapshot) => {
           if (docSnapshot.exists()) {
-            console.log("Real-time game data: ", docSnapshot.data());
+            const gameData = docSnapshot.data();
+            console.log("Real-time game data: ", gameData);
+            gameBoardString = gameData.gameBoard;
+            initGameBoard();
           } else {
             console.log("No such document!");
           }
