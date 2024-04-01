@@ -256,7 +256,6 @@
         initSubmit();
         initCancel();
         goToGameId();
-        initPieces(["E", "T", "A", "O", "I", "N"]); // TODO now: replace with getRandomLetters
         initGameBoard();
       };
 
@@ -634,6 +633,7 @@
           await fetchGameByCustomId(gameID);
         } else {
           currentGameFirebaseId = await createGame();
+          initPieces(getRandomLetters(initialBagOfPieces, 7));
         }
       }
 
@@ -651,6 +651,11 @@
             const gameData = gameDoc.data();
             currentGameFirebaseId = gameDoc.id;
             gameBoardString = gameData.gameBoard;
+
+            // TODO now: firestore should store player pieces and update bagOfPieces counts:
+            const pieces = getRandomLetters(gameData.bagOfPieces, 7);
+            initPieces(pieces);
+
             // Setting up real-time updates for the fetched game
             setupRealtimeUpdatesForGameDoc(gameDoc.ref);
           } else {
@@ -796,10 +801,20 @@
         let lettersLeft = Object.keys(bagOfPieces);
         const lettersTakingOut = [];
         for (let i = 0; i < howManyToTakeOut; i++) {
-          // TODO now
+          const randomIndex = getRandomInteger(0, lettersLeft.length - 1);
+          const letter = lettersLeft[randomIndex];
+          lettersTakingOut.push(letter);
+          delete bagOfPieces[letter]; // we're not updating the firestore here
           lettersLeft = Object.keys(bagOfPieces);
         }
         return lettersTakingOut;
+      }
+
+      function getRandomInteger(minInclusive, maxInclusive) {
+        minInclusive = Math.ceil(minInclusive);
+        maxInclusive = Math.floor(maxInclusive);
+        const delta = maxInclusive - minInclusive;
+        return Math.floor(Math.random() * (delta + 1)) + minInclusive;
       }
     </script>
   </body>
