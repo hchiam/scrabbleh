@@ -47,7 +47,7 @@
         }
       }
       #gameId {
-        width: 15ch;
+        width: 16ch;
         font-family: monospace;
       }
       .cell.candidate {
@@ -129,10 +129,11 @@
   </head>
   <body>
     <div id="submitContainer">
-      <button id="submit">submit</button>
-      <button id="cancel">cancel</button>
-      <button id="goToGameId">go to game ID:</button>
-      <input id="gameId" placeholder="game ID" />
+      <span id="scrabbleh">Scrabbleh?</span>
+      <button id="submit">Submit</button>
+      <button id="cancel">Cancel</button>
+      <button id="goToGameId">Game ID:</button>
+      <input id="gameId" placeholder="go to game ID" />
     </div>
     <div id="pieces"></div>
     <div id="gameBoard"></div>
@@ -241,6 +242,7 @@
         Z: 10,
       };
       const dynamicStyle = $("#dynamicStyle");
+      const scrabbleh = $("#scrabbleh");
       const submit = $("#submit");
       const cancel = $("#cancel");
       const gameId = $("#gameId");
@@ -249,6 +251,9 @@
 
       let currentGameFirebaseId = "";
       let gameBoardString = " ".repeat(15 * 15);
+
+      submit.hide();
+      cancel.hide();
 
       window.onload = async function initializeOnLoad() {
         await setupRealtimeUpdates();
@@ -335,9 +340,9 @@
             .removeClass("candidateFirstLetter")
             .removeClass("candidate");
 
-          cancel.add(submit).removeClass("haveCandidate");
-          submit.text("submit");
-          cancel.text("cancel");
+          submit.add(cancel).removeClass("haveCandidate");
+          submit.text("Submit").hide();
+          cancel.text("Cancel").hide();
         });
       }
 
@@ -436,9 +441,6 @@
 
       function initCancel() {
         cancel.on("click", () => {
-          cancel.add(submit).removeClass("haveCandidate");
-          submit.text("submit");
-          cancel.text("cancel");
           const candidateLetterCells = gameBoard.find(".candidate");
           const candidateLetters = candidateLetterCells.text().split("");
           candidateLetterCells.each((i, el) => $(el).text(""));
@@ -448,6 +450,10 @@
             .find(".candidateFirstLetter, .candidate")
             .removeClass("candidateFirstLetter")
             .removeClass("candidate");
+
+          submit.add(cancel).removeClass("haveCandidate");
+          submit.text("Submit").hide();
+          cancel.text("Cancel").hide();
         });
       }
 
@@ -458,6 +464,9 @@
             await deleteGame();
           }
           await fetchGameByCustomId(gameID);
+
+          submit.text("Submit").hide();
+          cancel.text("Cancel").hide();
         });
       }
 
@@ -516,51 +525,53 @@
           gameBoard.find(".currentCell").removeClass("currentCell");
           currentCell.addClass("currentCell");
           const currentPiece = $(".piece.currentPiece");
-          if (currentPiece.length) {
-            animateMove(currentPiece, currentCell);
-            currentCell.text(currentPiece.text());
+          if (!currentPiece.length) {
+            return;
+          }
+          animateMove(currentPiece, currentCell);
+          currentCell.text(currentPiece.text());
 
-            currentCell.addClass("candidate");
-            const addedOnePieceAlready = $("#submit").hasClass("haveCandidate");
-            if (!addedOnePieceAlready) {
-              currentCell.addClass("candidateFirstLetter");
-            }
+          currentCell.addClass("candidate");
+          const addedOnePieceAlready = $("#submit").hasClass("haveCandidate");
+          if (!addedOnePieceAlready) {
+            currentCell.addClass("candidateFirstLetter");
+          }
 
-            currentPiece.removeClass("currentPiece");
-            currentPiece.remove();
-            currentCell.removeClass("currentCell");
-            const i = currentCell.data("i");
-            const row = getRowIndex(i);
-            const column = getColumnIndex(i);
-            const validColumn = `:nth-of-type(15n+${column + 1})`;
-            const validRow = `:nth-of-type(n+${
-              1 + row * 15
-            }):not(:nth-of-type(n+${16 + row * 15}))`;
-            if (addedOnePieceAlready) {
-              // handle adding only a row XOR a column
-              const firstCandidate = gameBoard.find(".candidateFirstLetter");
-              const firstCandidateI = firstCandidate.data("i");
-              const firstCandidateRow = getRowIndex(firstCandidateI);
-              const firstCandidateColumn = getColumnIndex(firstCandidateI);
-              const isInSameRow = row === firstCandidateRow;
-              const isInSameColumn = column === firstCandidateColumn;
-              if (isInSameRow) {
-                dynamicStyle.text(
-                  `.cell:not(${validRow}) { pointer-events: none; opacity: 0.5; }`
-                );
-              } else if (isInSameColumn) {
-                dynamicStyle.text(
-                  `.cell:not(${validColumn}) { pointer-events: none; opacity: 0.5; }`
-                );
-              }
-            } else {
-              // first piece placed lets you place next in a row or a column
+          currentPiece.removeClass("currentPiece");
+          currentPiece.remove();
+          currentCell.removeClass("currentCell");
+          const i = currentCell.data("i");
+          const row = getRowIndex(i);
+          const column = getColumnIndex(i);
+          const validColumn = `:nth-of-type(15n+${column + 1})`;
+          const validRow = `:nth-of-type(n+${
+            1 + row * 15
+          }):not(:nth-of-type(n+${16 + row * 15}))`;
+          if (addedOnePieceAlready) {
+            // handle adding only a row XOR a column
+            const firstCandidate = gameBoard.find(".candidateFirstLetter");
+            const firstCandidateI = firstCandidate.data("i");
+            const firstCandidateRow = getRowIndex(firstCandidateI);
+            const firstCandidateColumn = getColumnIndex(firstCandidateI);
+            const isInSameRow = row === firstCandidateRow;
+            const isInSameColumn = column === firstCandidateColumn;
+            if (isInSameRow) {
               dynamicStyle.text(
-                `.cell:not(${validColumn}):not(${validRow}) { pointer-events: none; opacity: 0.5; }`
+                `.cell:not(${validRow}) { pointer-events: none; opacity: 0.5; }`
               );
-              submit.text("submit?").addClass("haveCandidate");
-              cancel.text("cancel?").addClass("haveCandidate");
+            } else if (isInSameColumn) {
+              dynamicStyle.text(
+                `.cell:not(${validColumn}) { pointer-events: none; opacity: 0.5; }`
+              );
             }
+          } else {
+            // first piece placed lets you place next in a row or a column
+            dynamicStyle.text(
+              `.cell:not(${validColumn}):not(${validRow}) { pointer-events: none; opacity: 0.5; }`
+            );
+            scrabbleh.hide();
+            submit.show().text("Submit?").addClass("haveCandidate");
+            cancel.show().text("Cancel?").addClass("haveCandidate");
           }
         });
       }
@@ -652,7 +663,8 @@
             currentGameFirebaseId = gameDoc.id;
             gameBoardString = gameData.gameBoard;
 
-            // TODO now: firestore should store player pieces and update bagOfPieces counts:
+            // TODO now: firestore should store player pieces
+            // TODO now: update bagOfPieces counts in firestore
             const pieces = getRandomLetters(gameData.bagOfPieces, 7);
             initPieces(pieces);
 
@@ -741,7 +753,7 @@
           await updateDoc(gameRef, {
             gameBoard: gameBoard,
             whoseTurn: whoseTurn,
-            bagOfPieces: initialBagOfPieces, // TODO now: update this
+            bagOfPieces: initialBagOfPieces, // TODO now: update bagOfPieces
           });
           console.log("Game updated successfully");
         } catch (error) {
