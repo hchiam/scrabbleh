@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>scrabbleh</title>
+    <title>ScrabblEh?</title>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/hchiam/css-boilerplate@7.0.0/style.css"
@@ -37,6 +37,12 @@
         z-index: var(--z-submitContainer);
         display: flex;
         gap: 1rem; */
+      }
+      #scrabbleh {
+        color: white;
+      }
+      #scrabbleh .eh {
+        color: red;
       }
       #submit.haveCandidate,
       #cancel.haveCandidate,
@@ -133,7 +139,7 @@
   </head>
   <body>
     <div id="submitContainer">
-      <span id="scrabbleh">Scrabbleh?</span>
+      <span id="scrabbleh">Scrabbl<span class="eh">Eh</span>?</span>
       <button id="submit">Submit</button>
       <button id="cancel">Cancel</button>
       <button id="goToGameId">Game ID:</button>
