@@ -11,7 +11,7 @@ service cloud.firestore {
     
     // match any document in the 'games' collection
     match /games/{gameId} {
-      // allow anyone to join a game as long as we don't have two players already
+      // allow anyone to join a game // TODO: as long as we don't have two players already
       allow read: if true; // !hasTwoPlayers();
       // restrict deleting game to players of game
       allow delete: if isPlayerOfGame();
@@ -22,7 +22,9 @@ service cloud.firestore {
         // && isBelowMaxNumberOfGames();
 			
       // allow whoever's turn it is to update a game
-      allow write: if isTurnValid() && isWriteDataValid() && isCalm();
+      allow update: if isTurnValid()
+        && isWriteDataValid()
+        && isCalm();
       
       // function hasTwoPlayers() {
       // 	return resource.data.player1Uid != null
@@ -41,7 +43,8 @@ service cloud.firestore {
       
       function isCalm() {
       	// https://stackoverflow.com/a/56487579
-        return request.time > resource.data.timestamp + duration.value(10, 's');
+        let secondsToWait = 10;
+        return request.time > resource.data.timestamp + duration.value(secondsToWait, 's');
       }
       
       // // TODO: this doesn't work:
