@@ -80,6 +80,10 @@
         background: var(--accent-colour);
         color: black;
       }
+      body[inert] .piece {
+        background: rgb(50, 50, 50);
+        color: whitesmoke;
+      }
       #gameBoard {
         display: grid;
         grid-template-columns: repeat(15, var(--cell-size));
@@ -142,6 +146,10 @@
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
       // TODO: Add SDKs for Firebase products that you want to use
       // https://firebase.google.com/docs/web/setup#available-libraries
+      import {
+        getAuth,
+        signInAnonymously,
+      } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
       // like import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-analytics.js";
       import {
         getFirestore,
@@ -170,6 +178,7 @@
       // Initialize Firebase
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
+      const auth = getAuth();
 
       const red = new Set([0, 7, 14, 105, 119, 210, 217, 224]);
       const pink = new Set([
@@ -188,6 +197,7 @@
           /* TODO: + "??" */
           .split("")
       ).join("");
+      let playerUid = "";
       let player1Pieces = "";
       let player2Pieces = "";
       const piecePoints = {
@@ -234,19 +244,34 @@
       cancel.hide();
 
       window.onload = async function initializeOnLoad() {
-        await setupRealtimeUpdates();
-        listenForBroadcasts();
-        initSubmit();
-        initCancel();
-        goToGameId();
-        initGameBoard();
+        await signIn().then(async (uid) => {
+          playerUid = uid;
+          await setupRealtimeUpdates();
+          listenForBroadcasts();
+          initSubmit();
+          initCancel();
+          goToGameId();
+          initGameBoard();
+        });
       };
+
+      async function signIn() {
+        try {
+          const userCredential = await signInAnonymously(auth);
+          const user = userCredential.user;
+          console.log("Signed in anonymously with UID:", user.uid);
+          return user.uid;
+        } catch (error) {
+          console.error("Error signing in anonymously:", error);
+          return null;
+        }
+      }
 
       function initSubmit() {
         submit.on("click", async () => {
           // check for continuous chain:
 
-          const chainRowOrColumn = [...gameBoard.find(".cell")].filter(
+          const chainRowOrColumn = [...gameBoard.find(".candidate")].filter(
             (el) => $(el).css("opacity") !== "0.5"
           );
           const chainLetters = chainRowOrColumn.map(
@@ -315,7 +340,8 @@
             currentGameFirebaseId,
             gameBoardString,
             player1Pieces,
-            "player2"
+            player2Pieces,
+            "player2" // TODO now: player2Pieces w/ anon auth
           );
 
           dynamicStyle.text("");
@@ -648,8 +674,9 @@
             gameBoardString = gameData.gameBoard;
 
             bagOfPieces = gameData.bagOfPieces;
-            player1Pieces = gameData.player1Pieces; // TODO now: player2Pieces w/ anon auth
-            initPieces(player1Pieces.split(""));
+            player1Pieces = gameData.player1Pieces;
+            player2Pieces = gameData.player2Pieces;
+            initPieces(player1Pieces.split("")); // TODO now: player2Pieces w/ anon auth
 
             // Setting up real-time updates for the fetched game
             setupRealtimeUpdatesForGameDoc(gameDoc.ref);
@@ -668,6 +695,8 @@
             const gameData = docSnapshot.data();
             console.log("Real-time game data: ", gameData);
             gameBoardString = gameData.gameBoard;
+            player1Pieces = gameData.player1Pieces;
+            player2Pieces = gameData.player2Pieces;
             initGameBoard();
           } else {
             console.log("Could not set up real-time updates for a game doc.");
@@ -683,18 +712,17 @@
           const gamesCollection = collection(db, "games");
           const randomId = getRandomId();
           gameId.val(randomId);
-          const player1Pieces = bagOfPieces.slice(0, 7);
-          const player2Pieces = bagOfPieces.slice(7, 14);
+          player1Pieces = bagOfPieces.slice(0, 7);
+          player2Pieces = bagOfPieces.slice(7, 14);
           bagOfPieces = bagOfPieces.slice(14);
           // Add a new document with Firestore-generated unique ID
           const gameRef = await addDoc(gamesCollection, {
             id: randomId,
             createdAt: new Date(),
-            player1: "Player 1",
-            player2: "Player 2",
+            player1Uid: playerUid,
             player1Pieces: player1Pieces,
             player2Pieces: player2Pieces,
-            whoseTurn: "player1",
+            whoseTurn: "player1", // start the game with player 1 to let the game start faster
             gameBoard: " ".repeat(15 * 15),
             bagOfPieces: bagOfPieces,
           });
@@ -738,16 +766,18 @@
       async function updateGame(
         currentGameFirebaseId,
         gameBoard,
-        playerPieces,
+        player1Pieces,
+        player2Pieces,
         whoseTurn
       ) {
         const gameRef = doc(db, "games", currentGameFirebaseId);
 
         try {
           await updateDoc(gameRef, {
+            player1Pieces: player1Pieces, // TODO now: player2Pieces w/ anon auth
+            player2Pieces: player2Pieces, // TODO now: player2Pieces w/ anon auth
+            whoseTurn: whoseTurn, // TODO now: whoseTurn should disable buttons while detecting whether you're player 1 or 2
             gameBoard: gameBoard,
-            player1Pieces: playerPieces, // TODO now: player2Pieces w/ anon auth
-            whoseTurn: whoseTurn,
             bagOfPieces: bagOfPieces,
           });
           console.log("Game updated successfully");
