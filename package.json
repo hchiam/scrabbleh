@@ -6,6 +6,6 @@
     "dev": "open src/index.html",
     "d": "yarn deploy",
     "surge": "yarn deploy",
-    "deploy": "surge src https://scrabbleh.surge.sh"
+    "deploy": "surge to-deploy https://scrabbleh.surge.sh"
   }
 }
