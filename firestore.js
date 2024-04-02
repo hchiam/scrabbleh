@@ -21,17 +21,19 @@ service cloud.firestore {
         return onlyAllowedFieldsArePresent()
         	&& request.resource.data.id is string
         	&& request.resource.data.createdAt is timestamp
-        	&& request.resource.data.players is list
+        	&& request.resource.data.player1 is string
+        	&& request.resource.data.player2 is string
+        	&& request.resource.data.player1Pieces is string
+        	&& request.resource.data.player2Pieces is string
         	&& request.resource.data.whoseTurn is string
         	&& request.resource.data.gameBoard is string
           && request.resource.data.gameBoard.size() == 15*15
-          && request.resource.data.bagOfPieces is map;
-          // && request.resource.data.bagOfPieces.keys().size() == 26
-          // && request.resource.data.bagOfPieces.keys().hasAll(['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M']);
+          && request.resource.data.bagOfPieces is string
+          && request.resource.data.bagOfPieces.size() <= 100;
       }
 
 			function onlyAllowedFieldsArePresent() {
-        let allowedFields = ['id', 'createdAt', 'players', 'whoseTurn', 'gameBoard', 'bagOfPieces'];
+        let allowedFields = ['id', 'createdAt', 'player1', 'player2', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces'];
         // ensure no extra fields are added
         return request.resource.data.keys().size() == allowedFields.size()
           && request.resource.data.keys().hasAll(allowedFields);

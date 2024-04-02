@@ -183,35 +183,13 @@
       const cornflowerBlue = new Set([
         20, 24, 76, 80, 84, 88, 136, 140, 144, 148, 200, 204,
       ]);
-      const initialBagOfPieces = {
-        // "?": 2,
-        E: 12,
-        A: 9,
-        I: 9,
-        O: 8,
-        N: 6,
-        R: 6,
-        T: 6,
-        L: 4,
-        S: 4,
-        U: 4,
-        D: 4,
-        G: 3,
-        B: 2,
-        C: 2,
-        M: 2,
-        P: 2,
-        F: 2,
-        H: 2,
-        V: 2,
-        W: 2,
-        Y: 2,
-        K: 1,
-        J: 1,
-        X: 1,
-        Q: 1,
-        Z: 1,
-      };
+      let bagOfPieces = shuffle(
+        "EEEEEEEEEEEEAAAAAAAAAIIIIIIIIIOOOOOOOONNNNNNRRRRRRTTTTTTLLLLSSSSUUUUDDDDGGGBBCCMMPPFFHHVVWWYYKJXQZ"
+          /* TODO: + "??" */
+          .split("")
+      ).join("");
+      let player1Pieces = "";
+      let player2Pieces = "";
       const piecePoints = {
         // "?": 0,
         E: 12,
@@ -332,7 +310,13 @@
           gameBoardString = [...gameBoard.find(".cell")]
             .map((x) => $(x).text() || " ")
             .join("");
-          await updateGame(currentGameFirebaseId, gameBoardString, "myTurn");
+          player1Pieces = $("#pieces").find(".piece").text(); // TODO now: player2Pieces w/ anon auth
+          await updateGame(
+            currentGameFirebaseId,
+            gameBoardString,
+            player1Pieces,
+            "player2"
+          );
 
           dynamicStyle.text("");
           gameBoard
@@ -470,9 +454,9 @@
         });
       }
 
-      function initPieces(lettersToAdd) {
+      function initPieces(lettersToAddArray) {
         let htmlString = "";
-        lettersToAdd.forEach((letter, count) => {
+        lettersToAddArray.forEach((letter, count) => {
           htmlString += `<button class="piece">${letter}</button>`;
         });
         pieces.append(htmlString);
@@ -644,14 +628,14 @@
           await fetchGameByCustomId(gameID);
         } else {
           currentGameFirebaseId = await createGame();
-          initPieces(getRandomLetters(initialBagOfPieces, 7));
+          initPieces(player1Pieces.split("")); // TODO now: player2Pieces w/ anon auth
         }
       }
 
       async function fetchGameByCustomId(customId) {
         try {
-          const gamesCol = collection(db, "games");
-          const q = query(gamesCol, where("id", "==", customId));
+          const gamesCollection = collection(db, "games");
+          const q = query(gamesCollection, where("id", "==", customId));
           const querySnapshot = await getDocs(q);
           if (!querySnapshot.empty) {
             // Assuming 'id' is unique, there should only be one doc
@@ -663,10 +647,9 @@
             currentGameFirebaseId = gameDoc.id;
             gameBoardString = gameData.gameBoard;
 
-            // TODO now: firestore should store player pieces
-            // TODO now: update bagOfPieces counts in firestore
-            const pieces = getRandomLetters(gameData.bagOfPieces, 7);
-            initPieces(pieces);
+            bagOfPieces = gameData.bagOfPieces;
+            player1Pieces = gameData.player1Pieces; // TODO now: player2Pieces w/ anon auth
+            initPieces(player1Pieces.split(""));
 
             // Setting up real-time updates for the fetched game
             setupRealtimeUpdatesForGameDoc(gameDoc.ref);
@@ -697,17 +680,23 @@
       async function createGame() {
         try {
           // Reference to the 'games' collection
-          const gamesCol = collection(db, "games");
+          const gamesCollection = collection(db, "games");
           const randomId = getRandomId();
           gameId.val(randomId);
+          const player1Pieces = bagOfPieces.slice(0, 7);
+          const player2Pieces = bagOfPieces.slice(7, 14);
+          bagOfPieces = bagOfPieces.slice(14);
           // Add a new document with Firestore-generated unique ID
-          const gameRef = await addDoc(gamesCol, {
+          const gameRef = await addDoc(gamesCollection, {
             id: randomId,
             createdAt: new Date(),
-            players: [],
-            whoseTurn: "",
+            player1: "Player 1",
+            player2: "Player 2",
+            player1Pieces: player1Pieces,
+            player2Pieces: player2Pieces,
+            whoseTurn: "player1",
             gameBoard: " ".repeat(15 * 15),
-            bagOfPieces: initialBagOfPieces,
+            bagOfPieces: bagOfPieces,
           });
           console.log("Game created with ID: ", gameRef.id);
           return gameRef.id; // Returns the generated game ID
@@ -746,14 +735,20 @@
         return new Date().getTime() - dayStart.getTime();
       }
 
-      async function updateGame(currentGameFirebaseId, gameBoard, whoseTurn) {
+      async function updateGame(
+        currentGameFirebaseId,
+        gameBoard,
+        playerPieces,
+        whoseTurn
+      ) {
         const gameRef = doc(db, "games", currentGameFirebaseId);
 
         try {
           await updateDoc(gameRef, {
             gameBoard: gameBoard,
+            player1Pieces: playerPieces, // TODO now: player2Pieces w/ anon auth
             whoseTurn: whoseTurn,
-            bagOfPieces: initialBagOfPieces, // TODO now: update bagOfPieces
+            bagOfPieces: bagOfPieces,
           });
           console.log("Game updated successfully");
         } catch (error) {
@@ -808,25 +803,26 @@
         return wordsToBlock.has(word.toLowerCase());
       }
 
-      function getRandomLetters(startingBagOfPieces, howManyToTakeOut) {
-        const bagOfPieces = JSON.parse(JSON.stringify(startingBagOfPieces));
-        let lettersLeft = Object.keys(bagOfPieces);
-        const lettersTakingOut = [];
-        for (let i = 0; i < howManyToTakeOut; i++) {
-          const randomIndex = getRandomInteger(0, lettersLeft.length - 1);
-          const letter = lettersLeft[randomIndex];
-          lettersTakingOut.push(letter);
-          delete bagOfPieces[letter]; // we're not updating the firestore here
-          lettersLeft = Object.keys(bagOfPieces);
-        }
-        return lettersTakingOut;
-      }
-
       function getRandomInteger(minInclusive, maxInclusive) {
         minInclusive = Math.ceil(minInclusive);
         maxInclusive = Math.floor(maxInclusive);
         const delta = maxInclusive - minInclusive;
         return Math.floor(Math.random() * (delta + 1)) + minInclusive;
+      }
+
+      function shuffle(array) {
+        // use Fisher-Yates shuffling algorithm:
+        function swap(arr, i, j) {
+          const temp = arr[i];
+          arr[i] = arr[j];
+          arr[j] = temp;
+        }
+        for (let i = 0; i < array.length; i++) {
+          // random index from the elements still remaining in the "hat":
+          const j = Math.floor(Math.random() * (array.length - i)) + i;
+          swap(array, i, j);
+        }
+        return array;
       }
     </script>
   </body>
