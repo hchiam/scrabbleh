@@ -44,13 +44,18 @@ service cloud.firestore {
         return request.time > resource.data.timestamp + duration.value(10, 's');
       }
       
-      function isBelowMaxNumberOfGames() {
-      	// https://fireship.io/lessons/how-to-rate-limit-writes-firestore/
-      	let maxGames = 3;
-      	return get(
-      		/databases/$(database)/documents/gameCount/pZ1NqlsNlQeXocIECtvA
-      	).data.gameCount <= maxGames;
-      }
+      // // TODO: this doesn't work:
+      // function isBelowMaxNumberOfGames() {
+      // 	let maxGames = 3;
+      //   // https://stackoverflow.com/a/59924063
+      // 	return get(
+      // 		/databases/$(database)/documents/games
+      // 	).data.count <= maxGames;
+      // 	// https://fireship.io/lessons/how-to-rate-limit-writes-firestore/
+      // 	return get(
+      // 		/databases/$(database)/documents/gameCount/pZ1NqlsNlQeXocIECtvA
+      // 	).data.gameCount <= maxGames;
+      // }
       
       function isCreateDataValid() {
         return onlyAllowedFieldsArePresentForCreate()
