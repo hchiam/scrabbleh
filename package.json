@@ -3,7 +3,7 @@
   "scripts": {
     "r": "yarn dev",
     "start": "yarn dev",
-    "dev": "open src/index.html",
+    "dev": "open to-deploy/index.html",
     "d": "yarn deploy",
     "surge": "yarn deploy",
     "deploy": "surge to-deploy https://scrabbleh.surge.sh"
