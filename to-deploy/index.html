@@ -249,6 +249,7 @@
       let currentGameFirebaseId = "";
       let gameBoardString = " ".repeat(15 * 15);
 
+      scrabbleh.show();
       submit.hide();
       cancel.hide();
 
@@ -340,12 +341,23 @@
 
           if (!validIntersectingWords) return;
 
-          // actually submit:
           gameBoardString = [...gameBoard.find(".cell")]
             .map((x) => $(x).text() || " ")
             .join("");
-          player1Pieces = $("#pieces").find(".piece").text(); // TODO now: player2Pieces w/ anon auth
-          updateWhoseTurn(whoseTurn === "player1" ? "player2" : "player1");
+
+          player1Pieces =
+            playerNumber === "player1"
+              ? $("#pieces").find(".piece").text()
+              : player1Pieces;
+
+          player2Pieces =
+            playerNumber === "player1"
+              ? player2Pieces
+              : $("#pieces").find(".piece").text();
+
+          whoseTurn = whoseTurn === "player1" ? "player2" : "player1";
+
+          // actually submit:
           await updateGame(
             currentGameFirebaseId,
             gameBoardString,
@@ -354,6 +366,8 @@
             whoseTurn
           );
 
+          updateWhoseTurn(whoseTurn);
+
           dynamicStyle.text("");
           gameBoard
             .find(".candidateFirstLetter, .candidate")
@@ -361,6 +375,8 @@
             .removeClass("candidate");
 
           submit.add(cancel).removeClass("haveCandidate");
+
+          scrabbleh.show();
           submit.text("Submit").hide();
           cancel.text("Cancel").hide();
         });
@@ -472,6 +488,8 @@
             .removeClass("candidate");
 
           submit.add(cancel).removeClass("haveCandidate");
+
+          scrabbleh.show();
           submit.text("Submit").hide();
           cancel.text("Cancel").hide();
         });
@@ -485,6 +503,7 @@
           }
           await joinGameByCustomId(gameID);
 
+          scrabbleh.show();
           submit.text("Submit").hide();
           cancel.text("Cancel").hide();
         });
@@ -493,9 +512,9 @@
       function initPieces(lettersToAddArray) {
         let htmlString = "";
         lettersToAddArray.forEach((letter, count) => {
-          htmlString += `<button class="piece">${letter}</button>`;
+          htmlString += `<button class="piece">${String(letter)[0]}</button>`;
         });
-        pieces.append(htmlString);
+        pieces.html(htmlString);
         pieces
           .find(".piece")
           .off("click")
@@ -664,7 +683,11 @@
           await joinGameByCustomId(gameID);
         } else {
           currentGameFirebaseId = await createGame();
-          initPieces(player1Pieces.split("")); // TODO now: player2Pieces w/ anon auth
+          if (playerNumber === "player1") {
+            initPieces(player1Pieces.split(""));
+          } else {
+            initPieces(player2Pieces.split(""));
+          }
         }
       }
 
@@ -687,12 +710,12 @@
             player1Pieces = gameData.player1Pieces;
             player2Pieces = gameData.player2Pieces;
             console.log(localStorage.playerUid, gameData.player1Uid);
-            playerNumber =
-              localStorage.playerUid === gameData.player1Uid
-                ? "player1"
-                : "player2";
+            const isPlayer1 = localStorage.playerUid === gameData.player1Uid;
+            playerNumber = isPlayer1 ? "player1" : "player2";
             updateWhoseTurn(gameData.whoseTurn); // depends on whether player1 already played
-            initPieces(player1Pieces.split("")); // TODO now: player2Pieces w/ anon auth
+            initPieces(
+              isPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
+            );
 
             const canAddPlayer2 = gameData.player2Uid === "";
             if (canAddPlayer2) {
@@ -813,8 +836,8 @@
 
         let data = {
           id: String(gameId.val()),
-          player1Pieces: player1Pieces, // TODO now: player2Pieces w/ anon auth
-          player2Pieces: player2Pieces, // TODO now: player2Pieces w/ anon auth
+          player1Pieces: player1Pieces,
+          player2Pieces: player2Pieces,
           whoseTurn: whoseTurn,
           gameBoard: gameBoard,
           bagOfPieces: bagOfPieces,
