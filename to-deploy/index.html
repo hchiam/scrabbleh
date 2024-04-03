@@ -800,6 +800,8 @@
             whoseTurn: whoseTurn, // start the game with player 1 to let the game start faster
             gameBoard: " ".repeat(15 * 15),
             bagOfPieces: bagOfPieces,
+            xy1: "",
+            xy2: "",
           });
           console.log("Game created with ID: ", gameRef.id);
           return gameRef.id; // Returns the generated game ID
@@ -859,6 +861,8 @@
           whoseTurn: whoseTurn,
           gameBoard: gameBoard,
           bagOfPieces: bagOfPieces,
+          xy1: "",
+          xy2: "",
         };
         if (player2Uid) {
           // adding player 2 to join the game:

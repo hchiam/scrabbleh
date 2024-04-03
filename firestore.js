@@ -72,7 +72,9 @@ service cloud.firestore {
         	&& request.resource.data.gameBoard is string
           && request.resource.data.gameBoard.size() == 15*15
           && request.resource.data.bagOfPieces is string
-          && request.resource.data.bagOfPieces.size() <= 100;
+          && request.resource.data.bagOfPieces.size() <= 100
+          && request.resource.data.xy1 is string
+          && request.resource.data.xy2 is string;
       }
 
       function isWriteDataValid() {
@@ -87,18 +89,20 @@ service cloud.firestore {
         	&& request.resource.data.gameBoard is string
           && request.resource.data.gameBoard.size() == 15*15
           && request.resource.data.bagOfPieces is string
-          && request.resource.data.bagOfPieces.size() <= 100;
+          && request.resource.data.bagOfPieces.size() <= 100
+          && request.resource.data.xy1 is string
+          && request.resource.data.xy2 is string;
       }
 
 			function onlyAllowedFieldsArePresentForCreate() {
-        let allowedFields = ['id', 'timestamp', 'player1Uid', 'player2Uid', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces'];
+        let allowedFields = ['id', 'timestamp', 'player1Uid', 'player2Uid', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2'];
         // ensure no extra fields are added
         return request.resource.data.keys().size() == allowedFields.size()
           && request.resource.data.keys().hasAll(allowedFields);
       }
 
 			function onlyAllowedFieldsArePresentForWrite() {
-        let allowedFields = ['id', /*'timestamp', 'player1Uid', 'player2Uid',*/ 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces'];
+        let allowedFields = ['id', /*'timestamp', 'player1Uid', 'player2Uid',*/ 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2'];
         let allowedFields_forPlayer2UidSetup = ['id', 'player2Uid'];
         // ensure no extra fields are added
         let hasOnlyAllowedFields = // TODO:
