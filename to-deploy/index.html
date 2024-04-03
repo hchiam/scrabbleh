@@ -129,6 +129,21 @@
         color: white;
         pointer-events: none;
       }
+      #hiddenGameControls {
+        pointer-events: none;
+        display: none;
+      }
+      #hiddenGameControls.showing {
+        pointer-events: revert;
+        display: flex;
+        gap: 1rem;
+      }
+      #hiddenGameControls.showing button:nth-of-type(2) {
+        margin-right: auto;
+      }
+      #hiddenGameControls.showing button kbd {
+        padding: 0.25rem;
+      }
     </style>
     <style id="dynamicStyle"></style>
     <script
@@ -147,6 +162,12 @@
     </div>
     <div id="pieces"></div>
     <div id="gameBoard"></div>
+    <div id="hiddenGameControls">
+      <button id="a">◀ <kbd>a</kbd></button>
+      <button id="d">▶ <kbd>d</kbd></button>
+      <button id="w">▲ <kbd>w</kbd></button>
+      <button id="s">▼ <kbd>s</kbd></button>
+    </div>
     <script type="module">
       // firebase-app.js is the backbone for other firebase modules:
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
@@ -245,9 +266,13 @@
       const gameId = $("#gameId");
       const pieces = $("#pieces");
       const gameBoard = $("#gameBoard");
+      const hiddenGameControls = $("#hiddenGameControls");
 
       let currentGameFirebaseId = "";
       let gameBoardString = " ".repeat(15 * 15);
+      let showingHiddenGame = false;
+      let xy1 = "";
+      let xy2 = "";
 
       scrabbleh.show();
       submit.hide();
@@ -262,6 +287,7 @@
           initCancel();
           initGoToGameId();
           initGameBoard();
+          initHiddenGameControls();
         });
       };
 
@@ -399,7 +425,7 @@
           cancel.text("Cancel").hide();
 
           if (placedDownEOrH) {
-            initHiddenGame();
+            toggleHiddenGameControls(true);
           }
         });
       }
@@ -743,7 +769,7 @@
             if (canAddPlayer2) {
               updateGame(
                 currentGameFirebaseId,
-                gameBoard,
+                gameBoardString,
                 player1Pieces,
                 player2Pieces,
                 whoseTurn,
@@ -779,6 +805,9 @@
             player2Pieces = gameData.player2Pieces;
             updateWhoseTurn(gameData.whoseTurn);
             initGameBoard();
+            toggleHiddenGameControls(
+              gameData.xy1 !== "" || gameData.xy2 !== ""
+            );
           } else {
             console.log("Could not set up real-time updates for a game doc.");
             gameId.val("");
@@ -970,8 +999,106 @@
           .prop("inert", whoseTurn !== playerNumber);
       }
 
-      function initHiddenGame() {
-        // TODO now:
+      async function toggleHiddenGameControls(show) {
+        showingHiddenGame = show;
+
+        // update wasd controls visibility
+        hiddenGameControls.toggleClass("showing", showingHiddenGame);
+        gameBoard.prop("inert", false);
+
+        if (showingHiddenGame && !xy1 && !xy2) {
+          updateHiddenGame("0,0", "0,0");
+        } else if (!showingHiddenGame) {
+          updateHiddenGame("", "");
+        }
+
+        // TODO now: when chasing player catches consuming player, or nothing's left: toggleHiddenGameControls(false); and updateWhoseTurn(whoseTurn); // in case need to undo gameBoard.prop("inert", false);
+      }
+
+      async function updateHiddenGame(xy1 = "0,0", xy2 = "0,0") {
+        try {
+          const gameRef = doc(db, "games", currentGameFirebaseId);
+          await updateDoc(gameRef, {
+            id: String(gameId.val()),
+            player1Pieces: player1Pieces,
+            player2Pieces: player2Pieces,
+            whoseTurn: whoseTurn,
+            gameBoard: gameBoardString,
+            bagOfPieces: bagOfPieces,
+            xy1: showingHiddenGame ? xy1 : "",
+            xy2: showingHiddenGame ? xy2 : "",
+          });
+          console.log("Hidden game updated successfully");
+
+          console.log(xy1, xy2); // TODO now: make this move both players around
+        } catch (error) {
+          console.error("Error updating hidden game: ", error);
+        }
+      }
+
+      function initHiddenGameControls() {
+        $("body").on("keypress", (event) => {
+          if (showingHiddenGame) {
+            switch (event.key) {
+              case "w":
+                hiddenGameControls.find("#w").click();
+                break;
+              case "a":
+                hiddenGameControls.find("#a").click();
+                break;
+              case "s":
+                hiddenGameControls.find("#s").click();
+                break;
+              case "d":
+                hiddenGameControls.find("#d").click();
+                break;
+            }
+          }
+        });
+        hiddenGameControls.find("#w").on("click", () => {
+          if (showingHiddenGame) {
+            let xyNew = playerNumber === "player1" ? xy1 : xy2;
+            xyNew = xyNew.split(",");
+            xyNew[1] = Number(xyNew[1]) - 100;
+            xyNew = xyNew.join(",");
+            xy1 = playerNumber === "player1" ? xyNew : xy1;
+            xy2 = playerNumber === "player1" ? xy2 : xyNew;
+            updateHiddenGame(xy1, xy2);
+          }
+        });
+        hiddenGameControls.find("#a").on("click", () => {
+          if (showingHiddenGame) {
+            let xyNew = playerNumber === "player1" ? xy1 : xy2;
+            xyNew = xyNew.split(",");
+            xyNew[0] = Number(xyNew[0]) - 100;
+            xyNew = xyNew.join(",");
+            xy1 = playerNumber === "player1" ? xyNew : xy1;
+            xy2 = playerNumber === "player1" ? xy2 : xyNew;
+            updateHiddenGame(xy1, xy2);
+          }
+        });
+        hiddenGameControls.find("#s").on("click", () => {
+          if (showingHiddenGame) {
+            let xyNew = playerNumber === "player1" ? xy1 : xy2;
+            xyNew = xyNew.split(",");
+            xyNew[1] = Number(xyNew[1]) + 100;
+            xyNew = xyNew.join(",");
+            xy1 = playerNumber === "player1" ? xyNew : xy1;
+            xy2 = playerNumber === "player1" ? xy2 : xyNew;
+            updateHiddenGame(xy1, xy2);
+          }
+        });
+        hiddenGameControls.find("#d").on("click", () => {
+          if (showingHiddenGame) {
+            let xyNew = playerNumber === "player1" ? xy1 : xy2;
+            xyNew = xyNew.split(",");
+            xyNew[0] = Number(xyNew[0]) + 100;
+            xyNew = xyNew.join(",");
+            xy1 = playerNumber === "player1" ? xyNew : xy1;
+            xy2 = playerNumber === "player1" ? xy2 : xyNew;
+            updateHiddenGame(xy1, xy2);
+          }
+        });
       }
     </script>
   </body>
