@@ -204,9 +204,11 @@
           /* TODO: + "??" */
           .split("")
       ).join("");
-      let playerUid = "";
+      localStorage.playerUid = "";
       let player1Pieces = "";
       let player2Pieces = "";
+      window.playerNumber = "";
+      let whoseTurn = "";
       const piecePoints = {
         // "?": 0,
         E: 12,
@@ -252,12 +254,12 @@
 
       window.onload = async function initializeOnLoad() {
         await signIn().then(async (uid) => {
-          playerUid = uid;
+          localStorage.playerUid = uid;
           await setupRealtimeUpdates();
-          listenForBroadcasts();
+          await listenForBroadcasts();
           initSubmit();
           initCancel();
-          goToGameId();
+          initGoToGameId();
           initGameBoard();
         });
       };
@@ -343,12 +345,13 @@
             .map((x) => $(x).text() || " ")
             .join("");
           player1Pieces = $("#pieces").find(".piece").text(); // TODO now: player2Pieces w/ anon auth
+          updateWhoseTurn(whoseTurn === "player1" ? "player2" : "player1");
           await updateGame(
             currentGameFirebaseId,
             gameBoardString,
             player1Pieces,
             player2Pieces,
-            "player2" // TODO now: player2Pieces w/ anon auth
+            whoseTurn
           );
 
           dynamicStyle.text("");
@@ -474,13 +477,13 @@
         });
       }
 
-      function goToGameId() {
+      function initGoToGameId() {
         $("#goToGameId").on("click", async () => {
           const gameID = gameId.val();
           if (!gameBoard.text()) {
             await deleteGame();
           }
-          await fetchGameByCustomId(gameID);
+          await joinGameByCustomId(gameID);
 
           submit.text("Submit").hide();
           cancel.text("Cancel").hide();
@@ -658,24 +661,24 @@
       async function setupRealtimeUpdates() {
         const gameID = gameId.val();
         if (gameID) {
-          await fetchGameByCustomId(gameID);
+          await joinGameByCustomId(gameID);
         } else {
           currentGameFirebaseId = await createGame();
           initPieces(player1Pieces.split("")); // TODO now: player2Pieces w/ anon auth
         }
       }
 
-      async function fetchGameByCustomId(customId) {
+      async function joinGameByCustomId(customId) {
         try {
           const gamesCollection = collection(db, "games");
-          const q = query(gamesCollection, where("id", "==", customId));
-          const querySnapshot = await getDocs(q);
-          if (!querySnapshot.empty) {
+          const gameQuery = query(gamesCollection, where("id", "==", customId));
+          const gameQuerySnapshot = await getDocs(gameQuery);
+          if (!gameQuerySnapshot.empty) {
             // Assuming 'id' is unique, there should only be one doc
-            if (querySnapshot.docs.length > 1) {
+            if (gameQuerySnapshot.docs.length > 1) {
               console.warn("Multiple games found with the same custom ID.");
             }
-            const gameDoc = querySnapshot.docs[0];
+            const gameDoc = gameQuerySnapshot.docs[0];
             const gameData = gameDoc.data();
             currentGameFirebaseId = gameDoc.id;
             gameBoardString = gameData.gameBoard;
@@ -683,7 +686,25 @@
             bagOfPieces = gameData.bagOfPieces;
             player1Pieces = gameData.player1Pieces;
             player2Pieces = gameData.player2Pieces;
+            console.log(localStorage.playerUid, gameData.player1Uid);
+            playerNumber =
+              localStorage.playerUid === gameData.player1Uid
+                ? "player1"
+                : "player2";
+            updateWhoseTurn(gameData.whoseTurn); // depends on whether player1 already played
             initPieces(player1Pieces.split("")); // TODO now: player2Pieces w/ anon auth
+
+            const canAddPlayer2 = gameData.player2Uid === "";
+            if (canAddPlayer2) {
+              updateGame(
+                currentGameFirebaseId,
+                gameBoard,
+                player1Pieces,
+                player2Pieces,
+                whoseTurn,
+                localStorage.playerUid
+              );
+            }
 
             // Setting up real-time updates for the fetched game
             setupRealtimeUpdatesForGameDoc(gameDoc.ref);
@@ -706,6 +727,7 @@
             gameBoardString = gameData.gameBoard;
             player1Pieces = gameData.player1Pieces;
             player2Pieces = gameData.player2Pieces;
+            updateWhoseTurn(gameData.whoseTurn);
             initGameBoard();
           } else {
             console.log("Could not set up real-time updates for a game doc.");
@@ -723,15 +745,18 @@
           gameId.val(randomId);
           player1Pieces = bagOfPieces.slice(0, 7);
           player2Pieces = bagOfPieces.slice(7, 14);
+          playerNumber = "player1";
+          updateWhoseTurn(playerNumber);
           bagOfPieces = bagOfPieces.slice(14);
           // Add a new document with Firestore-generated unique ID
           const gameRef = await addDoc(gamesCollection, {
             id: randomId,
             timestamp: serverTimestamp(),
-            player1Uid: playerUid,
+            player1Uid: localStorage.playerUid,
+            player2Uid: "",
             player1Pieces: player1Pieces,
             player2Pieces: player2Pieces,
-            whoseTurn: "player1", // start the game with player 1 to let the game start faster
+            whoseTurn: whoseTurn, // start the game with player 1 to let the game start faster
             gameBoard: " ".repeat(15 * 15),
             bagOfPieces: bagOfPieces,
           });
@@ -781,18 +806,29 @@
         gameBoard,
         player1Pieces,
         player2Pieces,
-        whoseTurn
+        whoseTurn,
+        player2Uid = ""
       ) {
         const gameRef = doc(db, "games", currentGameFirebaseId);
 
+        let data = {
+          id: String(gameId.val()),
+          player1Pieces: player1Pieces, // TODO now: player2Pieces w/ anon auth
+          player2Pieces: player2Pieces, // TODO now: player2Pieces w/ anon auth
+          whoseTurn: whoseTurn,
+          gameBoard: gameBoard,
+          bagOfPieces: bagOfPieces,
+        };
+        if (player2Uid) {
+          // adding player 2 to join the game:
+          data = {
+            id: String(gameId.val()),
+            player2Uid: player2Uid,
+          };
+        }
+
         try {
-          await updateDoc(gameRef, {
-            player1Pieces: player1Pieces, // TODO now: player2Pieces w/ anon auth
-            player2Pieces: player2Pieces, // TODO now: player2Pieces w/ anon auth
-            whoseTurn: whoseTurn, // TODO now: whoseTurn should disable buttons while detecting whether you're player 1 or 2
-            gameBoard: gameBoard,
-            bagOfPieces: bagOfPieces,
-          });
+          await updateDoc(gameRef, data);
           console.log("Game updated successfully");
         } catch (error) {
           console.error("Error updating game: ", error);
@@ -866,6 +902,16 @@
           swap(array, i, j);
         }
         return array;
+      }
+
+      function updateWhoseTurn(player) {
+        whoseTurn = player;
+        // whoseTurn should disable buttons while detecting whether you're player 1 or 2:
+        submit
+          .add(cancel)
+          .add(pieces)
+          .add(gameBoard)
+          .prop("inert", whoseTurn !== playerNumber);
       }
     </script>
   </body>

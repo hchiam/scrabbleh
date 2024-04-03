@@ -65,6 +65,7 @@ service cloud.firestore {
         	&& request.resource.data.id is string
         	&& request.resource.data.timestamp is timestamp
           && request.resource.data.player1Uid is string
+          && request.resource.data.player2Uid is string
         	&& request.resource.data.player1Pieces is string
         	&& request.resource.data.player2Pieces is string
         	&& request.resource.data.whoseTurn is string
@@ -76,9 +77,10 @@ service cloud.firestore {
 
       function isWriteDataValid() {
         return onlyAllowedFieldsArePresentForWrite()
-        	// && request.resource.data.id is string
-        	// && request.resource.data.createdAt is timestamp
+        	&& request.resource.data.id == resource.data.id // can't change the id
+        	// && request.resource.data.timestamp is timestamp
           // && request.resource.data.player1Uid is string
+          // && request.resource.data.player2Uid is string
         	&& request.resource.data.player1Pieces is string
         	&& request.resource.data.player2Pieces is string
         	&& request.resource.data.whoseTurn is string
@@ -89,28 +91,34 @@ service cloud.firestore {
       }
 
 			function onlyAllowedFieldsArePresentForCreate() {
-        let allowedFields = ['id', 'timestamp', 'player1Uid', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces'];
+        let allowedFields = ['id', 'timestamp', 'player1Uid', 'player2Uid', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces'];
         // ensure no extra fields are added
         return request.resource.data.keys().size() == allowedFields.size()
           && request.resource.data.keys().hasAll(allowedFields);
       }
 
 			function onlyAllowedFieldsArePresentForWrite() {
-        let allowedFields = [/*'id', 'timestamp', 'player1Uid',*/ 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces'];
-        let allowedFieldsPlayer2Uid = [/*'id', 'timestamp', 'player1Uid',*/ 'player2Uid', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces'];
+        let allowedFields = ['id', /*'timestamp', 'player1Uid', 'player2Uid',*/ 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces'];
+        let allowedFields_forPlayer2UidSetup = ['id', 'player2Uid'];
         // ensure no extra fields are added
         let hasOnlyAllowedFields = // TODO:
         	// request.resource.data.keys().size() == allowedFields.size()
         	// &&
           request.resource.data.keys().hasAll(allowedFields);
-        let hasOnlyAllowedFieldsPlayer2Uid = // TODO:
-        	// request.resource.data.keys().size() == allowedFieldsPlayer2Uid.size()
+        let hasOnlyAllowedFields_forPlayer2UidSetup = // TODO:
+        	// request.resource.data.keys().size() == allowedFields_forPlayer2UidSetup.size()
         	// &&
-          request.resource.data.keys().hasAll(allowedFieldsPlayer2Uid);
-        return hasOnlyAllowedFields || hasOnlyAllowedFieldsPlayer2Uid;
+          request.resource.data.keys().hasAll(allowedFields_forPlayer2UidSetup);
+        return hasOnlyAllowedFields || hasOnlyAllowedFields_forPlayer2UidSetup;
       }
 
       function isTurnValid() {
+      	let allowedFields_forPlayer2UidSetup = ['id', 'player2Uid'];
+        let hasOnlyAllowedFields_forPlayer2UidSetup = // TODO:
+        	// request.resource.data.keys().size() == allowedFields_forPlayer2UidSetup.size()
+        	// &&
+          request.resource.data.keys().hasAll(allowedFields_forPlayer2UidSetup);
+        
         let gameDoc = get(/databases/$(database)/documents/games/$(gameId)).data;
         
         let isPlayer1Turn = gameDoc.whoseTurn == 'player1' && gameDoc.player1Uid == request.auth.uid;
@@ -119,8 +127,11 @@ service cloud.firestore {
         // prevent editing the other player's pieces
         let arePlayer1PiecesValid = isPlayer2Turn && gameDoc.player1Pieces == request.resource.data.player1Pieces;
         let arePlayer2PiecesValid = isPlayer1Turn && gameDoc.player2Pieces == request.resource.data.player2Pieces;
-        
-        return request.auth != null && (isPlayer1Turn || isPlayer2Turn) && (arePlayer1PiecesValid || arePlayer2PiecesValid);
+
+				let isValidTurn = (isPlayer1Turn && arePlayer1PiecesValid)
+        	|| (isPlayer2Turn && arePlayer2PiecesValid);
+        return request.auth != null 
+        	&& (hasOnlyAllowedFields_forPlayer2UidSetup || isValidTurn);
       }
     }
   }
