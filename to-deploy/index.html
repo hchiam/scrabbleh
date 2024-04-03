@@ -207,7 +207,7 @@
       localStorage.playerUid = "";
       let player1Pieces = "";
       let player2Pieces = "";
-      window.playerNumber = "";
+      let playerNumber = "";
       let whoseTurn = "";
       const piecePoints = {
         // "?": 0,
@@ -269,7 +269,7 @@
         try {
           const userCredential = await signInAnonymously(auth);
           const user = userCredential.user;
-          console.log("Signed in anonymously with UID:", user.uid);
+          // console.log("Signed in anonymously with UID:", user.uid);
           return user.uid;
         } catch (error) {
           console.error("Error signing in anonymously:", error);
@@ -279,9 +279,11 @@
 
       function initSubmit() {
         submit.on("click", async () => {
+          const candidateCells = [...gameBoard.find(".candidate")];
+
           // check for continuous chain:
 
-          const chainRowOrColumn = [...gameBoard.find(".candidate")].filter(
+          const chainRowOrColumn = candidateCells.filter(
             (el) => $(el).css("opacity") !== "0.5"
           );
           const chainLetters = chainRowOrColumn.map(
@@ -298,7 +300,6 @@
           // check for valid intersecting words:
 
           let validIntersectingWords = true;
-          const candidateCells = [...gameBoard.find(".candidate")];
           const candidateIndices = candidateCells.map((x) => $(x).data("i"));
           const { min: minIndex, max: maxIndex } = candidateIndices.reduce(
             (acc, x) => {
@@ -345,17 +346,28 @@
             .map((x) => $(x).text() || " ")
             .join("");
 
-          player1Pieces =
-            playerNumber === "player1"
-              ? $("#pieces").find(".piece").text()
-              : player1Pieces;
+          const isPlayer1 = playerNumber === "player1";
 
-          player2Pieces =
-            playerNumber === "player1"
-              ? player2Pieces
-              : $("#pieces").find(".piece").text();
+          const piecesToReplace = Math.max(
+            7 - pieces.find(".piece").length,
+            candidateCells.length
+          );
+          const piecesToAdd = bagOfPieces.slice(0, piecesToReplace);
+          bagOfPieces = bagOfPieces.slice(piecesToReplace);
 
-          whoseTurn = whoseTurn === "player1" ? "player2" : "player1";
+          player1Pieces = isPlayer1
+            ? pieces.find(".piece").text() + piecesToAdd
+            : player1Pieces;
+
+          player2Pieces = isPlayer1
+            ? player2Pieces
+            : pieces.find(".piece").text() + piecesToAdd;
+
+          updateWhoseTurn(whoseTurn === "player1" ? "player2" : "player1");
+
+          updatePieces(
+            isPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
+          );
 
           // actually submit:
           await updateGame(
@@ -366,12 +378,7 @@
             whoseTurn
           );
 
-          updateWhoseTurn(whoseTurn);
-
           dynamicStyle.text("");
-
-          // TODO now:
-          // updatePieces;
 
           gameBoard
             .find(".candidateFirstLetter, .candidate")
@@ -683,7 +690,7 @@
       }
 
       async function setupRealtimeUpdates() {
-        const gameID = gameId.val();
+        const gameID = gameId.val() || localStorage.gameId;
         if (gameID) {
           await joinGameByCustomId(gameID);
         } else {
@@ -714,7 +721,6 @@
             bagOfPieces = gameData.bagOfPieces;
             player1Pieces = gameData.player1Pieces;
             player2Pieces = gameData.player2Pieces;
-            console.log(localStorage.playerUid, gameData.player1Uid);
             const isPlayer1 = localStorage.playerUid === gameData.player1Uid;
             playerNumber = isPlayer1 ? "player1" : "player2";
             updateWhoseTurn(gameData.whoseTurn); // depends on whether player1 already played
@@ -734,11 +740,15 @@
               );
             }
 
+            gameId.val(customId);
+            localStorage.gameId = customId;
+
             // Setting up real-time updates for the fetched game
             setupRealtimeUpdatesForGameDoc(gameDoc.ref);
           } else {
             console.log("No game found with the custom ID: ", customId);
             gameId.val("");
+            localStorage.gameId = "";
             location.reload();
           }
         } catch (error) {
@@ -751,7 +761,7 @@
         onSnapshot(gameDocRef, (docSnapshot) => {
           if (docSnapshot.exists()) {
             const gameData = docSnapshot.data();
-            console.log("Real-time game data: ", gameData);
+            // console.log("Real-time game data: ", gameData);
             gameBoardString = gameData.gameBoard;
             player1Pieces = gameData.player1Pieces;
             player2Pieces = gameData.player2Pieces;
@@ -760,6 +770,7 @@
           } else {
             console.log("Could not set up real-time updates for a game doc.");
             gameId.val("");
+            localStorage.gameId = "";
             location.reload();
           }
         });
@@ -771,11 +782,12 @@
           const gamesCollection = collection(db, "games");
           const randomId = getRandomId();
           gameId.val(randomId);
+          localStorage.gameId = randomId;
           player1Pieces = bagOfPieces.slice(0, 7);
           player2Pieces = bagOfPieces.slice(7, 14);
+          bagOfPieces = bagOfPieces.slice(14);
           playerNumber = "player1";
           updateWhoseTurn(playerNumber);
-          bagOfPieces = bagOfPieces.slice(14);
           // Add a new document with Firestore-generated unique ID
           const gameRef = await addDoc(gamesCollection, {
             id: randomId,
@@ -885,7 +897,7 @@
           onSnapshot(broadcastDoc.ref, (docSnapshot) => {
             if (docSnapshot.exists()) {
               const broadcastData = docSnapshot.data();
-              console.log("Real-time broadcast data: ", broadcastData);
+              // console.log("Real-time broadcast data: ", broadcastData);
               if (String(broadcastData.message).trim()) {
                 alert(`Broadcast message: \n\n${broadcastData.message}`);
               }
