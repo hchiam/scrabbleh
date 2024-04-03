@@ -762,6 +762,7 @@
           if (docSnapshot.exists()) {
             const gameData = docSnapshot.data();
             // console.log("Real-time game data: ", gameData);
+            bagOfPieces = gameData.bagOfPieces;
             gameBoardString = gameData.gameBoard;
             player1Pieces = gameData.player1Pieces;
             player2Pieces = gameData.player2Pieces;
