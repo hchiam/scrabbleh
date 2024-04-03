@@ -144,6 +144,10 @@
       #hiddenGameControls.showing button kbd {
         padding: 0.25rem;
       }
+      #hiddenGameControls.showing #player1Character,
+      #hiddenGameControls.showing #player2Character {
+        position: absolute;
+      }
     </style>
     <style id="dynamicStyle"></style>
     <script
@@ -163,6 +167,8 @@
     <div id="pieces"></div>
     <div id="gameBoard"></div>
     <div id="hiddenGameControls">
+      <div id="player1Character">player1</div>
+      <div id="player2Character">player2</div>
       <button id="a">◀ <kbd>a</kbd></button>
       <button id="d">▶ <kbd>d</kbd></button>
       <button id="w">▲ <kbd>w</kbd></button>
@@ -267,6 +273,8 @@
       const pieces = $("#pieces");
       const gameBoard = $("#gameBoard");
       const hiddenGameControls = $("#hiddenGameControls");
+      const player1Character = $("#player1Character");
+      const player2Character = $("#player2Character");
 
       let currentGameFirebaseId = "";
       let gameBoardString = " ".repeat(15 * 15);
@@ -1000,6 +1008,8 @@
       }
 
       async function toggleHiddenGameControls(show) {
+        return; // TODO now:
+
         showingHiddenGame = show;
 
         // update wasd controls visibility
@@ -1012,7 +1022,8 @@
           updateHiddenGame("", "");
         }
 
-        // TODO now: when chasing player catches consuming player, or nothing's left: toggleHiddenGameControls(false); and updateWhoseTurn(whoseTurn); // in case need to undo gameBoard.prop("inert", false);
+        // TODO now: if chasing player catches consuming player, or nothing's left:
+        // then: toggleHiddenGameControls(false); and updateWhoseTurn(whoseTurn); // in case need to undo gameBoard.prop("inert", false);
       }
 
       async function updateHiddenGame(xy1 = "0,0", xy2 = "0,0") {
@@ -1030,10 +1041,27 @@
           });
           console.log("Hidden game updated successfully");
 
-          console.log(xy1, xy2); // TODO now: make this move both players around
+          positionThePlayerCharacters(xy1, xy2);
         } catch (error) {
           console.error("Error updating hidden game: ", error);
         }
+      }
+
+      function positionThePlayerCharacters(xy1, xy2) {
+        const xy1New = xy1.split(",");
+        const xy2New = xy2.split(",");
+
+        // TODO now: position relative to gameBoard
+
+        player1Character.css({
+          left: Number(xy1New[0]),
+          top: Number(xy1New[1]),
+        });
+
+        player2Character.css({
+          left: Number(xy2New[0]),
+          top: Number(xy2New[1]),
+        });
       }
 
       function initHiddenGameControls() {
@@ -1100,6 +1128,8 @@
           }
         });
       }
+
+      // TODO now: points
     </script>
   </body>
 </html>
