@@ -369,6 +369,10 @@
           updateWhoseTurn(whoseTurn);
 
           dynamicStyle.text("");
+
+          // TODO now:
+          // updatePieces;
+
           gameBoard
             .find(".candidateFirstLetter, .candidate")
             .removeClass("candidateFirstLetter")
@@ -477,10 +481,11 @@
 
       function initCancel() {
         cancel.on("click", () => {
+          const unusedPieces = pieces.text().split("");
           const candidateLetterCells = gameBoard.find(".candidate");
           const candidateLetters = candidateLetterCells.text().split("");
           candidateLetterCells.each((i, el) => $(el).text(""));
-          initPieces(candidateLetters);
+          updatePieces(unusedPieces.concat(candidateLetters));
           dynamicStyle.text("");
           gameBoard
             .find(".candidateFirstLetter, .candidate")
@@ -509,7 +514,7 @@
         });
       }
 
-      function initPieces(lettersToAddArray) {
+      function updatePieces(lettersToAddArray) {
         let htmlString = "";
         lettersToAddArray.forEach((letter, count) => {
           htmlString += `<button class="piece">${String(letter)[0]}</button>`;
@@ -684,9 +689,9 @@
         } else {
           currentGameFirebaseId = await createGame();
           if (playerNumber === "player1") {
-            initPieces(player1Pieces.split(""));
+            updatePieces(player1Pieces.split(""));
           } else {
-            initPieces(player2Pieces.split(""));
+            updatePieces(player2Pieces.split(""));
           }
         }
       }
@@ -713,7 +718,7 @@
             const isPlayer1 = localStorage.playerUid === gameData.player1Uid;
             playerNumber = isPlayer1 ? "player1" : "player2";
             updateWhoseTurn(gameData.whoseTurn); // depends on whether player1 already played
-            initPieces(
+            updatePieces(
               isPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
             );
 
