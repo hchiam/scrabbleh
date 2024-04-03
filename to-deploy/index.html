@@ -342,6 +342,8 @@
 
           if (!validIntersectingWords) return;
 
+          // can now proceed with updates:
+
           gameBoardString = [...gameBoard.find(".cell")]
             .map((x) => $(x).text() || " ")
             .join("");
@@ -365,9 +367,10 @@
 
           updateWhoseTurn(whoseTurn === "player1" ? "player2" : "player1");
 
-          updatePieces(
-            isPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
-          );
+          // check before submit:
+          const lettersPlacedDown = gameBoard.find(".candidate").text();
+          const placedDownEOrH =
+            lettersPlacedDown.includes("E") || lettersPlacedDown.includes("H");
 
           // actually submit:
           await updateGame(
@@ -376,6 +379,10 @@
             player1Pieces,
             player2Pieces,
             whoseTurn
+          );
+
+          updatePieces(
+            isPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
           );
 
           dynamicStyle.text("");
@@ -390,6 +397,10 @@
           scrabbleh.show();
           submit.text("Submit").hide();
           cancel.text("Cancel").hide();
+
+          if (placedDownEOrH) {
+            initHiddenGame();
+          }
         });
       }
 
@@ -957,6 +968,10 @@
           .add(pieces)
           .add(gameBoard)
           .prop("inert", whoseTurn !== playerNumber);
+      }
+
+      function initHiddenGame() {
+        // TODO now:
       }
     </script>
   </body>
