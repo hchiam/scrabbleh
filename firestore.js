@@ -66,6 +66,10 @@ service cloud.firestore {
         	&& request.resource.data.timestamp is timestamp
           && request.resource.data.player1Uid is string
           && request.resource.data.player2Uid is string
+        	&& request.resource.data.player1Score is int
+        	&& request.resource.data.player1Score == 0
+        	&& request.resource.data.player2Score is int
+        	&& request.resource.data.player2Score == 0
         	&& request.resource.data.player1Pieces is string
         	&& request.resource.data.player2Pieces is string
         	&& request.resource.data.whoseTurn is string
@@ -83,6 +87,8 @@ service cloud.firestore {
         	// && request.resource.data.timestamp is timestamp
           // && request.resource.data.player1Uid is string
           // && request.resource.data.player2Uid is string
+        	&& request.resource.data.player1Score is int
+        	&& request.resource.data.player2Score is int
         	&& request.resource.data.player1Pieces is string
         	&& request.resource.data.player2Pieces is string
         	&& request.resource.data.whoseTurn is string
@@ -95,14 +101,14 @@ service cloud.firestore {
       }
 
 			function onlyAllowedFieldsArePresentForCreate() {
-        let allowedFields = ['id', 'timestamp', 'player1Uid', 'player2Uid', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2'];
+        let allowedFields = ['id', 'timestamp', 'player1Uid', 'player2Uid', 'player1Score', 'player2Score', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2'];
         // ensure no extra fields are added
         return request.resource.data.keys().size() == allowedFields.size()
           && request.resource.data.keys().hasAll(allowedFields);
       }
 
 			function onlyAllowedFieldsArePresentForWrite() {
-        let allowedFields = ['id', /*'timestamp', 'player1Uid', 'player2Uid',*/ 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2'];
+        let allowedFields = ['id', /*'timestamp', 'player1Uid', 'player2Uid',*/ 'player1Score', 'player2Score', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2'];
         let allowedFields_forPlayer2UidSetup = ['id', 'player2Uid'];
         // ensure no extra fields are added
         let hasOnlyAllowedFields = // TODO:

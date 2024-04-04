@@ -81,6 +81,7 @@
         font-size: 1rem;
         font-weight: bold;
         z-index: var(--z-piece);
+        position: relative; /* so :after can be position: absolute; */
       }
       .piece.currentPiece {
         background: var(--accent-colour);
@@ -112,6 +113,7 @@
         font-size: 1rem;
         font-weight: bold;
         outline: calc(var(--grid-gap) / 2) solid white;
+        position: relative; /* so :after can be position: absolute; */
       }
       .cell:focus,
       .cell:hover {
@@ -147,6 +149,59 @@
       #hiddenGameControls.showing #player1Character,
       #hiddenGameControls.showing #player2Character {
         position: absolute;
+      }
+      .piece::after,
+      .cell::after {
+        position: absolute;
+        bottom: 0%;
+        right: 0.25em;
+        font-size: small;
+      }
+      .piece:where(.E, .A, .I, .O, .N, .R, .T, .L, .S, .U)::after,
+      .cell:where(.E, .A, .I, .O, .N, .R, .T, .L, .S, .U)::after {
+        content: "1";
+      }
+      .piece:where(.D, .G)::after,
+      .cell:where(.D, .G)::after {
+        content: "2";
+      }
+      .piece:where(.B, .C, .M, .P)::after,
+      .cell:where(.B, .C, .M, .P)::after {
+        content: "3";
+      }
+      .piece:where(.F, .H, .V, .W, .Y)::after,
+      .cell:where(.F, .H, .V, .W, .Y)::after {
+        content: "4";
+      }
+      .piece:where(.K)::after,
+      .cell:where(.K)::after {
+        content: "5";
+      }
+      .piece:where(.J, .X)::after,
+      .cell:where(.J, .X)::after {
+        content: "8";
+      }
+      .piece:where(.Q, .Z)::after,
+      .cell:where(.Q, .Z)::after {
+        content: "10";
+      }
+      .cell::before {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        left: 50%;
+        top: 50%;
+      }
+      .cell.x3W:empty::before {
+        content: "3W";
+      }
+      .cell.x2W:empty::before {
+        content: "2W";
+      }
+      .cell.x3L:empty::before {
+        content: "3L";
+      }
+      .cell.x2L:empty::before {
+        content: "2L";
       }
     </style>
     <style id="dynamicStyle"></style>
@@ -232,6 +287,8 @@
           .split("")
       ).join("");
       localStorage.playerUid = "";
+      let player1Score = 0;
+      let player2Score = 0;
       let player1Pieces = "";
       let player2Pieces = "";
       let playerNumber = "";
@@ -382,7 +439,12 @@
             .map((x) => $(x).text() || " ")
             .join("");
 
-          const isPlayer1 = playerNumber === "player1";
+          const addedPoints = getPointsToAdd();
+
+          const wasPlayer1 = playerNumber === "player1";
+
+          player1Score += wasPlayer1 ? addedPoints : 0;
+          player2Score += wasPlayer1 ? 0 : addedPoints;
 
           const piecesToReplace = Math.max(
             7 - pieces.find(".piece").length,
@@ -391,11 +453,11 @@
           const piecesToAdd = bagOfPieces.slice(0, piecesToReplace);
           bagOfPieces = bagOfPieces.slice(piecesToReplace);
 
-          player1Pieces = isPlayer1
+          player1Pieces = wasPlayer1
             ? pieces.find(".piece").text() + piecesToAdd
             : player1Pieces;
 
-          player2Pieces = isPlayer1
+          player2Pieces = wasPlayer1
             ? player2Pieces
             : pieces.find(".piece").text() + piecesToAdd;
 
@@ -410,13 +472,15 @@
           await updateGame(
             currentGameFirebaseId,
             gameBoardString,
+            player1Score,
+            player2Score,
             player1Pieces,
             player2Pieces,
             whoseTurn
           );
 
           updatePieces(
-            isPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
+            wasPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
           );
 
           dynamicStyle.text("");
@@ -569,7 +633,8 @@
       function updatePieces(lettersToAddArray) {
         let htmlString = "";
         lettersToAddArray.forEach((letter, count) => {
-          htmlString += `<button class="piece">${String(letter)[0]}</button>`;
+          const whatLetter = String(letter)[0];
+          htmlString += `<button class="piece ${whatLetter}">${whatLetter}</button>`;
         });
         pieces.html(htmlString);
         pieces
@@ -591,19 +656,25 @@
         let htmlString = "";
         for (let i = 0; i < gameBoardString.length; i++) {
           let style = "";
+          let multiplier = "";
           if (red.has(i)) {
             style = `style="--background:red;--color:white;"`;
+            multiplier = "x3W";
           } else if (pink.has(i)) {
             style = `style="--background:pink;--color:black;"`;
+            multiplier = "x2W";
           } else if (yellow.has(i)) {
             style = `style="--background:yellow;--color:black;"`;
+            multiplier = "x2W";
           } else if (lightBlue.has(i)) {
             style = `style="--background:lightBlue;--color:black;"`;
+            multiplier = "x2L";
           } else if (cornflowerBlue.has(i)) {
             style = `style="--background:cornflowerBlue;--color:white;"`;
+            multiplier = "x3L";
           }
           const cellValue = gameBoardString[i].trim() ? gameBoardString[i] : "";
-          htmlString += `<button data-i="${i}" class="cell" ${
+          htmlString += `<button data-i="${i}" class="cell ${multiplier}" ${
             style ? style : ""
           }>${cellValue}</button>`;
         }
@@ -764,13 +835,15 @@
             gameBoardString = gameData.gameBoard;
 
             bagOfPieces = gameData.bagOfPieces;
+            player1Score = gameData.player1Score;
+            player2Score = gameData.player2Score;
             player1Pieces = gameData.player1Pieces;
             player2Pieces = gameData.player2Pieces;
-            const isPlayer1 = localStorage.playerUid === gameData.player1Uid;
-            playerNumber = isPlayer1 ? "player1" : "player2";
+            const wasPlayer1 = localStorage.playerUid === gameData.player1Uid;
+            playerNumber = wasPlayer1 ? "player1" : "player2";
             updateWhoseTurn(gameData.whoseTurn); // depends on whether player1 already played
             updatePieces(
-              isPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
+              wasPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
             );
 
             const canAddPlayer2 = gameData.player2Uid === "";
@@ -778,6 +851,8 @@
               updateGame(
                 currentGameFirebaseId,
                 gameBoardString,
+                player1Score,
+                player2Score,
                 player1Pieces,
                 player2Pieces,
                 whoseTurn,
@@ -843,6 +918,8 @@
             timestamp: serverTimestamp(),
             player1Uid: localStorage.playerUid,
             player2Uid: "",
+            player1Score: 0,
+            player2Score: 0,
             player1Pieces: player1Pieces,
             player2Pieces: player2Pieces,
             whoseTurn: whoseTurn, // start the game with player 1 to let the game start faster
@@ -895,6 +972,8 @@
       async function updateGame(
         currentGameFirebaseId,
         gameBoard,
+        player1Score,
+        player2Score,
         player1Pieces,
         player2Pieces,
         whoseTurn,
@@ -1130,6 +1209,15 @@
       }
 
       // TODO now: points
+      function getPointsToAdd() {
+        // assumes board validation has already been done
+
+        let addedPoints = 0;
+
+        //
+
+        return addedPoints;
+      }
     </script>
   </body>
 </html>
