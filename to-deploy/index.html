@@ -975,6 +975,10 @@
             // console.log("Real-time game data: ", gameData);
             bagOfPieces = gameData.bagOfPieces;
             gameBoardString = gameData.gameBoard;
+            player1Score = gameData.player1Score;
+            player2Score = gameData.player2Score;
+            player1ScoreInput.val(player1Score);
+            player2ScoreInput.val(player2Score);
             player1Pieces = gameData.player1Pieces;
             player2Pieces = gameData.player2Pieces;
             updateWhoseTurn(gameData.whoseTurn);
