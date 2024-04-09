@@ -1187,9 +1187,8 @@
           .prop("inert", whoseTurn !== playerNumber);
       }
 
+      window.toggleHiddenGameControls = toggleHiddenGameControls;
       async function toggleHiddenGameControls(show) {
-        return; // TODO now:
-
         showingHiddenGame = show;
 
         // change styling:
@@ -1270,7 +1269,7 @@
           if (showingHiddenGame) {
             let xyNew = playerNumber === "player1" ? xy1 : xy2;
             xyNew = xyNew.split(",");
-            xyNew[1] = Number(xyNew[1]) - 100;
+            xyNew[1] = (Number(xyNew[1]) || 0) - 100;
             xyNew = xyNew.join(",");
             xy1 = playerNumber === "player1" ? xyNew : xy1;
             xy2 = playerNumber === "player1" ? xy2 : xyNew;
@@ -1292,7 +1291,7 @@
           if (showingHiddenGame) {
             let xyNew = playerNumber === "player1" ? xy1 : xy2;
             xyNew = xyNew.split(",");
-            xyNew[1] = Number(xyNew[1]) + 100;
+            xyNew[1] = (Number(xyNew[1]) || 0) + 100;
             xyNew = xyNew.join(",");
             xy1 = playerNumber === "player1" ? xyNew : xy1;
             xy2 = playerNumber === "player1" ? xy2 : xyNew;
