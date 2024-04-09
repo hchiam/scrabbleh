@@ -1315,9 +1315,11 @@
 
         let currentWordPoints = 0;
 
+        // part 1: calculate the candidate letters and opacity 1 letters connected to them:
+
         const multipliers = new Set(["x3W", "x2W", "x3L", "x2L"]);
         let wordMultiplier = 1;
-        $(".candidate").each((i, el) => {
+        gameBoard.find(".candidate").each((i, el) => {
           const cell = $(el);
           const letter = cell.text();
           let letterPoints = piecePoints[letter];
@@ -1330,6 +1332,27 @@
           if (multiplier === "x2L") letterPoints *= 2;
           currentWordPoints += letterPoints;
         });
+        // opacity 1 letters connected to .candidate letters
+        gameBoard
+          .find(".cell")
+          .filter(
+            (i, el) =>
+              $(el).css("opacity") === "1" &&
+              $(el).text() &&
+              !$(el).hasClass("candidate")
+          )
+          .each((i, el) => {
+            const index = $(el).data("i");
+            const letter = $(el).text();
+            if (
+              $(`.cell[data-i="${getIndexUp(index)}"]`).text() ||
+              $(`.cell[data-i="${getIndexDown(index)}"]`).text() ||
+              $(`.cell[data-i="${getIndexLeft(index)}"]`).text() ||
+              $(`.cell[data-i="${getIndexRight(index)}"]`).text()
+            ) {
+              currentWordPoints += piecePoints[letter];
+            }
+          });
         currentWordPoints *= wordMultiplier;
 
         addedPoints += currentWordPoints;
