@@ -737,19 +737,19 @@
         for (let i = 0; i < gameBoardString.length; i++) {
           let style = "";
           let multiplier = "";
-          if (red.has(i)) {
+          if (red.has(i) && gameBoardString[i] === " ") {
             style = `style="--background:red;--color:white;"`;
             multiplier = "x3W";
-          } else if (pink.has(i)) {
+          } else if (pink.has(i) && gameBoardString[i] === " ") {
             style = `style="--background:pink;--color:black;"`;
             multiplier = "x2W";
-          } else if (yellow.has(i)) {
+          } else if (yellow.has(i) && gameBoardString[i] === " ") {
             style = `style="--background:yellow;--color:black;"`;
             multiplier = "x2W";
-          } else if (lightBlue.has(i)) {
+          } else if (lightBlue.has(i) && gameBoardString[i] === " ") {
             style = `style="--background:lightBlue;--color:black;"`;
             multiplier = "x2L";
-          } else if (cornflowerBlue.has(i)) {
+          } else if (cornflowerBlue.has(i) && gameBoardString[i] === " ") {
             style = `style="--background:cornflowerBlue;--color:white;"`;
             multiplier = "x3L";
           }
