@@ -1389,9 +1389,70 @@
 
         addedPoints += currentWordPoints;
 
-        // TODO now: intersections too
+        // part 2: intersections too:
 
-        addedPoints += 0;
+        currentWordPoints = 0;
+
+        gameBoard.find(".candidate").each((i, el) => {
+          wordMultiplier = 1;
+
+          const cell = $(el);
+          const letter = cell.text();
+          let letterPoints = piecePoints[letter];
+          const multiplier = multipliers.has(cell[0].classList[1])
+            ? cell[0].classList[1]
+            : "";
+          if (multiplier === "x3W") wordMultiplier *= 3;
+          if (multiplier === "x2W") wordMultiplier *= 2;
+          if (multiplier === "x3L") letterPoints *= 3;
+          if (multiplier === "x2L") letterPoints *= 2;
+
+          let foundIntersection = false;
+
+          const index = $(el).data("i");
+          let up = getIndexUp(index);
+          while (
+            $(`.cell[data-i="${up}"]`).text() &&
+            $(`.cell[data-i="${up}"]`).css("opacity") !== "1"
+          ) {
+            foundIntersection = true;
+            letterPoints += piecePoints[$(`.cell[data-i="${up}"]`).text()];
+            up = getIndexUp(up);
+          }
+          let down = getIndexDown(index);
+          while (
+            $(`.cell[data-i="${down}"]`).text() &&
+            $(`.cell[data-i="${down}"]`).css("opacity") !== "1"
+          ) {
+            foundIntersection = true;
+            letterPoints += piecePoints[$(`.cell[data-i="${down}"]`).text()];
+            down = getIndexDown(down);
+          }
+          let left = getIndexLeft(index);
+          while (
+            $(`.cell[data-i="${left}"]`).text() &&
+            $(`.cell[data-i="${left}"]`).css("opacity") !== "1"
+          ) {
+            foundIntersection = true;
+            letterPoints += piecePoints[$(`.cell[data-i="${left}"]`).text()];
+            left = getIndexLeft(left);
+          }
+          let right = getIndexRight(index);
+          while (
+            $(`.cell[data-i="${right}"]`).text() &&
+            $(`.cell[data-i="${right}"]`).css("opacity") !== "1"
+          ) {
+            foundIntersection = true;
+            letterPoints += piecePoints[$(`.cell[data-i="${right}"]`).text()];
+            right = getIndexRight(right);
+          }
+
+          if (foundIntersection) {
+            currentWordPoints += letterPoints * wordMultiplier;
+          }
+        });
+
+        addedPoints += currentWordPoints;
 
         return addedPoints;
       }
