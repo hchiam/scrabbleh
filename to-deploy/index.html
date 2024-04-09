@@ -113,6 +113,9 @@
         background: rgb(50, 50, 50);
         color: whitesmoke;
       }
+      #pieces[inert] .piece {
+        color: gray;
+      }
       #gameBoardWrapper {
         overflow: auto;
       }
@@ -148,7 +151,6 @@
         align-items: center;
         text-align: center;
         vertical-align: middle;
-        line-height: var(--cell-size);
         font-family: monospace;
         font-size: 1rem;
         font-weight: bold;
@@ -234,17 +236,26 @@
         left: 50%;
         top: 50%;
       }
-      .cell.x3W:empty::before {
+      .cell.x3W::before {
         content: "3W";
       }
-      .cell.x2W:empty::before {
+      .cell.x2W::before {
         content: "2W";
       }
-      .cell.x3L:empty::before {
+      .cell.x3L::before {
         content: "3L";
       }
-      .cell.x2L:empty::before {
+      .cell.x2L::before {
         content: "2L";
+      }
+      .cell.x3W:not(:empty)::before,
+      .cell.x2W:not(:empty)::before,
+      .cell.x3L:not(:empty)::before,
+      .cell.x2L:not(:empty)::before {
+        position: absolute;
+        top: 0.5em;
+        left: 0.6em;
+        font-size: small;
       }
     </style>
     <style id="dynamicStyle"></style>
@@ -338,6 +349,8 @@
       localStorage.playerUid = "";
       const player1ScoreLabel = $('label[for="player1ScoreInput"]');
       const player2ScoreLabel = $('label[for="player2ScoreInput"]');
+      const player1ScoreInput = $("#player1ScoreInput");
+      const player2ScoreInput = $("#player2ScoreInput");
       let player1Score = 0;
       let player2Score = 0;
       let player1Pieces = "";
@@ -346,7 +359,7 @@
       let whoseTurn = "";
       const piecePoints = {
         // "?": 0,
-        E: 12,
+        E: 1,
         A: 1,
         I: 1,
         O: 1,
@@ -496,6 +509,8 @@
 
           player1Score += wasPlayer1 ? addedPoints : 0;
           player2Score += wasPlayer1 ? 0 : addedPoints;
+          player1ScoreInput.val(player1Score);
+          player2ScoreInput.val(player2Score);
 
           const piecesToReplace = Math.max(
             7 - pieces.find(".piece").length,
@@ -529,6 +544,15 @@
             player2Pieces,
             whoseTurn
           );
+
+          candidateCells.forEach((el) => {
+            $(el)
+              .removeClass(
+                "A B C D E F G H I J K L M N O P W R S T U V W X Y Z"
+              )
+              .removeClass("x3W x2W x3L x2L") // can't reuse multipliers
+              .removeAttr("style");
+          });
 
           updatePieces(
             wasPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
@@ -651,7 +675,12 @@
           const unusedPieces = pieces.text().split("");
           const candidateLetterCells = gameBoard.find(".candidate");
           const candidateLetters = candidateLetterCells.text().split("");
-          candidateLetterCells.each((i, el) => $(el).text(""));
+          candidateLetterCells.each((i, el) => {
+            $(el).text("");
+          });
+          candidateLetterCells.removeClass(
+            "A B C D E F G H I J K L M N O P W R S T U V W X Y Z"
+          ); // cancelling shouldn't remove x3W x2W x3L x2L multipliers (need a successful submit)
           updatePieces(unusedPieces.concat(candidateLetters));
           dynamicStyle.text("");
           gameBoard
@@ -748,6 +777,7 @@
           }
           animateMove(currentPiece, currentCell);
           currentCell.text(currentPiece.text());
+          currentCell.addClass(currentPiece[0].classList[1]);
 
           currentCell.addClass("candidate");
           const addedOnePieceAlready = $("#submit").hasClass("haveCandidate");
@@ -888,6 +918,8 @@
             bagOfPieces = gameData.bagOfPieces;
             player1Score = gameData.player1Score;
             player2Score = gameData.player2Score;
+            player1ScoreInput.val(player1Score);
+            player2ScoreInput.val(player2Score);
             player1Pieces = gameData.player1Pieces;
             player2Pieces = gameData.player2Pieces;
             const wasPlayer1 = localStorage.playerUid === gameData.player1Uid;
@@ -899,7 +931,9 @@
 
             if (wasPlayer1) {
               player1ScoreLabel.html("&nbsp;You:");
+              player2ScoreLabel.html("&nbsp;P2:");
             } else {
+              player1ScoreLabel.html("&nbsp;P1:");
               player2ScoreLabel.html("&nbsp;You:");
             }
 
@@ -969,6 +1003,9 @@
           bagOfPieces = bagOfPieces.slice(14);
           playerNumber = "player1";
           player1ScoreLabel.html("&nbsp;You:");
+          player2ScoreLabel.html("&nbsp;P2:");
+          player1ScoreInput.val(0);
+          player2ScoreInput.val(0);
           updateWhoseTurn(playerNumber);
           // Add a new document with Firestore-generated unique ID
           const gameRef = await addDoc(gamesCollection, {
@@ -1041,6 +1078,8 @@
 
         let data = {
           id: String(gameId.val()),
+          player1Score: player1Score,
+          player2Score: player2Score,
           player1Pieces: player1Pieces,
           player2Pieces: player2Pieces,
           whoseTurn: whoseTurn,
@@ -1269,13 +1308,35 @@
         });
       }
 
-      // TODO now: points
       function getPointsToAdd() {
         // assumes board validation has already been done
 
         let addedPoints = 0;
 
-        //
+        let currentWordPoints = 0;
+
+        const multipliers = new Set(["x3W", "x2W", "x3L", "x2L"]);
+        let wordMultiplier = 1;
+        $(".candidate").each((i, el) => {
+          const cell = $(el);
+          const letter = cell.text();
+          let letterPoints = piecePoints[letter];
+          const multiplier = multipliers.has(cell[0].classList[1])
+            ? cell[0].classList[1]
+            : "";
+          if (multiplier === "x3W") wordMultiplier *= 3;
+          if (multiplier === "x2W") wordMultiplier *= 2;
+          if (multiplier === "x3L") letterPoints *= 3;
+          if (multiplier === "x2L") letterPoints *= 2;
+          currentWordPoints += letterPoints;
+        });
+        currentWordPoints *= wordMultiplier;
+
+        addedPoints += currentWordPoints;
+
+        // TODO now: intersections too
+
+        addedPoints += 0;
 
         return addedPoints;
       }
