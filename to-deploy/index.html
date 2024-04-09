@@ -38,6 +38,23 @@
         display: flex;
         gap: 1rem; */
       }
+      #gameId {
+        width: 16ch;
+        font-family: monospace;
+      }
+      label[for="player1ScoreInput"],
+      label[for="player2ScoreInput"] {
+        font-size: 0.6rem;
+        position: absolute;
+        background: transparent;
+        color: var(--accent-colour);
+      }
+      #player1ScoreInput,
+      #player2ScoreInput {
+        width: 4.5ch;
+        padding-inline: 0;
+        text-align: center;
+      }
       #scrabbleh {
         color: white;
       }
@@ -52,10 +69,6 @@
           animation: haveCandidate 1s infinite alternate;
         }
       }
-      #gameId {
-        width: 16ch;
-        font-family: monospace;
-      }
       .cell.candidate {
         outline-width: calc(var(--grid-gap) / 2);
       }
@@ -69,6 +82,9 @@
         /*margin-block-start: 2.5rem;*/ /* so #submitContainer doesn't cover top */
         margin-block-start: 1rem;
         margin-block-end: 1rem;
+      }
+      body.showingHiddenGame #pieces {
+        display: none;
       }
       .piece {
         width: var(--cell-size);
@@ -97,11 +113,29 @@
         background: rgb(50, 50, 50);
         color: whitesmoke;
       }
+      #gameBoardWrapper {
+        overflow: auto;
+      }
+      body.showingHiddenGame #gameBoardWrapper {
+        overflow: revert;
+        perspective: 1000px;
+        transform-style: preserve-3d;
+        width: calc(var(--cell-size) * 15 / 2);
+        margin-block: 0;
+        margin-inline: auto;
+      }
       #gameBoard {
         display: grid;
         grid-template-columns: repeat(15, var(--cell-size));
         grid-gap: var(--grid-gap);
-        overflow: auto;
+      }
+      body.showingHiddenGame #gameBoard {
+        transform: scale(0.5) translate(-50%, -120%) rotateX(50deg);
+        transform-origin: bottom;
+        transform-style: inherit;
+        position: absolute;
+        pointer-events: none;
+        margin-inline: -1rem;
       }
       .cell {
         width: var(--cell-size);
@@ -138,21 +172,25 @@
       }
       #hiddenGameControls {
         pointer-events: none;
-        display: none;
-      }
-      #hiddenGameControls.showing {
-        pointer-events: revert;
         display: flex;
-        gap: 1rem;
+        position: fixed;
+        bottom: -10rem;
+        width: calc(100% - 2rem);
       }
-      #hiddenGameControls.showing button:nth-of-type(2) {
+      body.showingHiddenGame #hiddenGameControls {
+        pointer-events: revert;
+        gap: 1rem;
+        bottom: 2rem;
+        transition-delay: 1s;
+      }
+      body.showingHiddenGame #hiddenGameControls button:nth-of-type(2) {
         margin-right: auto;
       }
-      #hiddenGameControls.showing button kbd {
+      body.showingHiddenGame #hiddenGameControls button kbd {
         padding: 0.25rem;
       }
-      #hiddenGameControls.showing #player1Character,
-      #hiddenGameControls.showing #player2Character {
+      body.showingHiddenGame #hiddenGameControls #player1Character,
+      body.showingHiddenGame #hiddenGameControls #player2Character {
         position: absolute;
       }
       .piece::after,
@@ -220,12 +258,18 @@
     <div id="submitContainer">
       <button id="goToGameId">Game ID:</button>
       <input id="gameId" placeholder="go to game ID" />
+      <label for="player1ScoreInput">&nbsp;P1:</label
+      ><input id="player1ScoreInput" value="0" disabled />
+      <label for="player2ScoreInput">&nbsp;P2:</label
+      ><input id="player2ScoreInput" value="0" disabled />
       <span id="scrabbleh">Scrabbl<span class="eh">Eh</span>?</span>
       <button id="submit">Submit</button>
       <button id="cancel">Cancel</button>
     </div>
     <div id="pieces"></div>
-    <div id="gameBoard"></div>
+    <div id="gameBoardWrapper">
+      <div id="gameBoard"></div>
+    </div>
     <div id="hiddenGameControls">
       <div id="player1Character">player1</div>
       <div id="player2Character">player2</div>
@@ -292,6 +336,8 @@
           .split("")
       ).join("");
       localStorage.playerUid = "";
+      const player1ScoreLabel = $('label[for="player1ScoreInput"]');
+      const player2ScoreLabel = $('label[for="player2ScoreInput"]');
       let player1Score = 0;
       let player2Score = 0;
       let player1Pieces = "";
@@ -851,6 +897,12 @@
               wasPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
             );
 
+            if (wasPlayer1) {
+              player1ScoreLabel.html("&nbsp;You:");
+            } else {
+              player2ScoreLabel.html("&nbsp;You:");
+            }
+
             const canAddPlayer2 = gameData.player2Uid === "";
             if (canAddPlayer2) {
               updateGame(
@@ -916,6 +968,7 @@
           player2Pieces = bagOfPieces.slice(7, 14);
           bagOfPieces = bagOfPieces.slice(14);
           playerNumber = "player1";
+          player1ScoreLabel.html("&nbsp;You:");
           updateWhoseTurn(playerNumber);
           // Add a new document with Firestore-generated unique ID
           const gameRef = await addDoc(gamesCollection, {
@@ -1096,7 +1149,10 @@
 
         showingHiddenGame = show;
 
-        // update wasd controls visibility
+        // change styling:
+        $("body").toggleClass("showingHiddenGame", showingHiddenGame);
+
+        // update wasd controls visibility:
         hiddenGameControls.toggleClass("showing", showingHiddenGame);
         gameBoard.prop("inert", false);
 
