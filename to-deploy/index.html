@@ -87,6 +87,12 @@
         background: var(--accent-colour);
         color: black;
       }
+      .piece:not(.currentPiece),
+      .piece:not(.currentPiece):focus,
+      .piece:not(.currentPiece):hover {
+        background: rgb(50, 50, 50);
+        color: whitesmoke;
+      }
       body[inert] .piece {
         background: rgb(50, 50, 50);
         color: whitesmoke;
@@ -123,7 +129,6 @@
         z-index: var(--z-cell-focused);
       }
       .cell.currentCell {
-        background: var(--accent-colour) !important;
         color: black !important;
       }
       .cell:not(:empty) {
