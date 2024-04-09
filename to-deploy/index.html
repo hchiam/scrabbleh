@@ -1337,26 +1337,54 @@
           currentWordPoints += letterPoints;
         });
         // opacity 1 letters connected to .candidate letters
-        gameBoard
+        const opacity1Letters = gameBoard
           .find(".cell")
           .filter(
             (i, el) =>
               $(el).css("opacity") === "1" &&
               $(el).text() &&
               !$(el).hasClass("candidate")
-          )
-          .each((i, el) => {
-            const index = $(el).data("i");
-            const letter = $(el).text();
-            if (
-              $(`.cell[data-i="${getIndexUp(index)}"]`).text() ||
-              $(`.cell[data-i="${getIndexDown(index)}"]`).text() ||
-              $(`.cell[data-i="${getIndexLeft(index)}"]`).text() ||
-              $(`.cell[data-i="${getIndexRight(index)}"]`).text()
-            ) {
-              currentWordPoints += piecePoints[letter];
+          );
+        opacity1Letters.each((i, el) => {
+          const index = $(el).data("i");
+          const letter = $(el).text();
+          let found = false;
+          let up = getIndexUp(index);
+          while (!found && $(`.cell[data-i="${up}"]`).text()) {
+            if ($(`.cell[data-i="${up}"]`).is(".candidate")) {
+              found = true;
+              break;
             }
-          });
+            up = getIndexUp(up);
+          }
+          let down = getIndexDown(index);
+          while (!found && $(`.cell[data-i="${down}"]`).text()) {
+            if ($(`.cell[data-i="${down}"]`).is(".candidate")) {
+              found = true;
+              break;
+            }
+            down = getIndexDown(down);
+          }
+          let left = getIndexLeft(index);
+          while (!found && $(`.cell[data-i="${left}"]`).text()) {
+            if ($(`.cell[data-i="${left}"]`).is(".candidate")) {
+              found = true;
+              break;
+            }
+            left = getIndexLeft(left);
+          }
+          let right = getIndexRight(index);
+          while (!found && $(`.cell[data-i="${right}"]`).text()) {
+            if ($(`.cell[data-i="${right}"]`).is(".candidate")) {
+              found = true;
+              break;
+            }
+            right = getIndexRight(right);
+          }
+          if (found) {
+            currentWordPoints += piecePoints[letter];
+          }
+        });
         currentWordPoints *= wordMultiplier;
 
         addedPoints += currentWordPoints;
