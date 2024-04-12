@@ -239,6 +239,17 @@
         background: white;
         color: red;
       }
+      #player1Character.you:after,
+      #player2Character.you:after {
+        content: "⇩";
+        position: absolute;
+        top: -5.5rem;
+        left: 0.75rem;
+        font-size: 5rem;
+        color: yellow;
+        filter: drop-shadow(0 0 5px red);
+        transform: rotateZ(20deg);
+      }
       #player1Character.consumer,
       #player2Character.consumer {
         background: yellow !important;
