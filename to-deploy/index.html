@@ -116,6 +116,9 @@
       #pieces[inert] .piece {
         color: gray;
       }
+      body.showingHiddenGame .piece {
+        pointer-events: none;
+      }
       #gameBoardWrapper {
         overflow: auto;
       }
@@ -127,18 +130,21 @@
         margin-block: 0;
         margin-inline: auto;
       }
-      #gameBoard {
-        display: grid;
-        grid-template-columns: repeat(15, var(--cell-size));
-        grid-gap: var(--grid-gap);
-      }
-      body.showingHiddenGame #gameBoard {
+      body.showingHiddenGame #gameBoardTransformContainer {
         transform: scale(0.5) translate(-50%, -120%) rotateX(50deg);
         transform-origin: bottom;
         transform-style: inherit;
         position: absolute;
         pointer-events: none;
         margin-inline: -1rem;
+      }
+      #gameBoard {
+        display: grid;
+        grid-template-columns: repeat(15, var(--cell-size));
+        grid-gap: var(--grid-gap);
+      }
+      body.showingHiddenGame #gameBoard {
+        grid-gap: 0;
       }
       .cell {
         width: var(--cell-size);
@@ -174,6 +180,7 @@
       }
       body.showingHiddenGame .cell {
         outline-color: transparent;
+        pointer-events: none;
       }
       #hiddenGameControls {
         pointer-events: none;
@@ -194,9 +201,34 @@
       body.showingHiddenGame #hiddenGameControls button kbd {
         padding: 0.25rem;
       }
-      body.showingHiddenGame #hiddenGameControls #player1Character,
-      body.showingHiddenGame #hiddenGameControls #player2Character {
+      #player1Character,
+      #player2Character {
+        opacity: 0;
+        pointer-events: none;
         position: absolute;
+        top: 0;
+        left: 0;
+        transition: opacity 1s, transform 0.1s;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: red;
+        color: white;
+        font-weight: bold;
+      }
+      #player1Character.you,
+      #player2Character.you {
+        background: white;
+        color: red;
+      }
+      body.showingHiddenGame #player1Character,
+      body.showingHiddenGame #player2Character {
+        height: var(--cell-size);
+        width: var(--cell-size);
+        transform: translateZ(10px);
+        box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3);
+        border-radius: 50%;
+        border: 3px solid var(--accent-colour);
       }
       .piece::after,
       .cell::after {
@@ -282,11 +314,13 @@
     </div>
     <div id="pieces"></div>
     <div id="gameBoardWrapper">
-      <div id="gameBoard"></div>
+      <div id="gameBoardTransformContainer">
+        <div id="gameBoard"></div>
+        <div id="player1Character">P1</div>
+        <div id="player2Character">P2</div>
+      </div>
     </div>
     <div id="hiddenGameControls">
-      <div id="player1Character">player1</div>
-      <div id="player2Character">player2</div>
       <button id="a">◀ <kbd>a</kbd></button>
       <button id="d">▶ <kbd>d</kbd></button>
       <button id="w">▲ <kbd>w</kbd></button>
@@ -762,7 +796,7 @@
           let style = "";
           let multiplier = "";
           if (red.has(i) && gameBoardString[i] === " ") {
-            style = `style="--background:red;--color:white;"`;
+            style = `style="--background:maroon;--color:white;"`;
             multiplier = "x3W";
           } else if (pink.has(i) && gameBoardString[i] === " ") {
             style = `style="--background:pink;--color:black;"`;
@@ -957,9 +991,11 @@
             if (wasPlayer1) {
               player1ScoreLabel.html("&nbsp;You:");
               player2ScoreLabel.html("&nbsp;P2:");
+              player1Character.text("You").addClass("you");
             } else {
               player1ScoreLabel.html("&nbsp;P1:");
               player2ScoreLabel.html("&nbsp;You:");
+              player2Character.text("You").addClass("you");
             }
 
             const canAddPlayer2 = gameData.player2Uid === "";
@@ -1037,6 +1073,7 @@
           player2ScoreLabel.html("&nbsp;P2:");
           player1ScoreInput.val(0);
           player2ScoreInput.val(0);
+          player1Character.text("You").addClass("you");
           updateWhoseTurn(playerNumber);
           // Add a new document with Firestore-generated unique ID
           const gameRef = await addDoc(gamesCollection, {
@@ -1226,9 +1263,16 @@
         gameBoard.prop("inert", false);
 
         if (showingHiddenGame && !xy1 && !xy2) {
-          updateHiddenGame("0,0", "0,0");
+          const bottomLeft = `0,14`;
+          const bottomRight = `14,14`;
+          const wasPlayer1 = playerNumber === "player1";
+          xy1 = wasPlayer1 ? bottomRight : bottomLeft;
+          xy2 = wasPlayer1 ? bottomLeft : bottomRight;
+          updateHiddenGame(xy1, xy2);
         } else if (!showingHiddenGame) {
-          updateHiddenGame("", "");
+          xy1 = "";
+          xy2 = "";
+          updateHiddenGame(xy1, xy2);
         }
 
         // TODO now: if chasing player catches consuming player, or nothing's left:
@@ -1257,20 +1301,30 @@
       }
 
       function positionThePlayerCharacters(xy1, xy2) {
-        const xy1New = xy1.split(",");
-        const xy2New = xy2.split(",");
+        const xy1New = xy1.split(",").map((v) => minMax(0, Number(v), 14));
+        const xy2New = xy2.split(",").map((v) => minMax(0, Number(v), 14));
 
-        // TODO now: position relative to gameBoard
+        const delta = Number($(".cell").css("width").replace("px", ""));
 
         player1Character.css({
-          left: Number(xy1New[0]),
-          top: Number(xy1New[1]),
+          opacity: 1,
+          transform: `translate(${Number(xy1New[0]) * delta}px, ${
+            Number(xy1New[1]) * delta
+          }px)`,
         });
 
         player2Character.css({
-          left: Number(xy2New[0]),
-          top: Number(xy2New[1]),
+          opacity: 1,
+          transform: `translate(${Number(xy2New[0]) * delta}px, ${
+            Number(xy2New[1]) * delta
+          }px)`,
         });
+      }
+
+      function minMax(min, n, max) {
+        if (n < min) return min;
+        if (n > max) return max;
+        return n;
       }
 
       function initHiddenGameControls() {
@@ -1296,7 +1350,7 @@
           if (showingHiddenGame) {
             let xyNew = playerNumber === "player1" ? xy1 : xy2;
             xyNew = xyNew.split(",");
-            xyNew[1] = (Number(xyNew[1]) || 0) - 100;
+            xyNew[1] = minMax(0, (Number(xyNew[1]) || 0) - 1, 14);
             xyNew = xyNew.join(",");
             xy1 = playerNumber === "player1" ? xyNew : xy1;
             xy2 = playerNumber === "player1" ? xy2 : xyNew;
@@ -1307,7 +1361,7 @@
           if (showingHiddenGame) {
             let xyNew = playerNumber === "player1" ? xy1 : xy2;
             xyNew = xyNew.split(",");
-            xyNew[0] = Number(xyNew[0]) - 100;
+            xyNew[0] = minMax(0, Number(xyNew[0]) - 1, 14);
             xyNew = xyNew.join(",");
             xy1 = playerNumber === "player1" ? xyNew : xy1;
             xy2 = playerNumber === "player1" ? xy2 : xyNew;
@@ -1318,7 +1372,7 @@
           if (showingHiddenGame) {
             let xyNew = playerNumber === "player1" ? xy1 : xy2;
             xyNew = xyNew.split(",");
-            xyNew[1] = (Number(xyNew[1]) || 0) + 100;
+            xyNew[1] = minMax(0, (Number(xyNew[1]) || 0) + 1, 14);
             xyNew = xyNew.join(",");
             xy1 = playerNumber === "player1" ? xyNew : xy1;
             xy2 = playerNumber === "player1" ? xy2 : xyNew;
@@ -1329,7 +1383,7 @@
           if (showingHiddenGame) {
             let xyNew = playerNumber === "player1" ? xy1 : xy2;
             xyNew = xyNew.split(",");
-            xyNew[0] = Number(xyNew[0]) + 100;
+            xyNew[0] = minMax(0, Number(xyNew[0]) + 1, 14);
             xyNew = xyNew.join(",");
             xy1 = playerNumber === "player1" ? xyNew : xy1;
             xy2 = playerNumber === "player1" ? xy2 : xyNew;
