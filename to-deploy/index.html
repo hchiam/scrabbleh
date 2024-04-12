@@ -181,6 +181,15 @@
       body.showingHiddenGame .cell {
         outline-color: transparent;
         pointer-events: none;
+        opacity: 0.7;
+      }
+      body.showingHiddenGame .cell:not(:empty) {
+        opacity: 1;
+        background: yellow;
+        color: black;
+        border-radius: 50%;
+        transform: scale(0.5);
+        font-size: 3rem;
       }
       #hiddenGameControls {
         pointer-events: none;
@@ -221,8 +230,14 @@
         background: white;
         color: red;
       }
+      #player1Character.consumer,
+      #player2Character.consumer {
+        background: yellow !important;
+        color: black !important;
+      }
       body.showingHiddenGame #player1Character,
       body.showingHiddenGame #player2Character {
+        opacity: 1;
         height: var(--cell-size);
         width: var(--cell-size);
         transform: translateZ(10px);
@@ -796,7 +811,7 @@
           let style = "";
           let multiplier = "";
           if (red.has(i) && gameBoardString[i] === " ") {
-            style = `style="--background:maroon;--color:white;"`;
+            style = `style="--background:red;--color:white;"`;
             multiplier = "x3W";
           } else if (pink.has(i) && gameBoardString[i] === " ") {
             style = `style="--background:pink;--color:black;"`;
@@ -1275,6 +1290,15 @@
           updateHiddenGame(xy1, xy2);
         }
 
+        if (showingHiddenGame) {
+          // TODO now: hidden game scoring
+          if (player1Score < player2Score) {
+            player1Character.addClass("consumer");
+          } else {
+            player2Character.addClass("consumer");
+          }
+        }
+
         // TODO now: if chasing player catches consuming player, or nothing's left:
         // then: toggleHiddenGameControls(false); and updateWhoseTurn(whoseTurn); // in case need to undo gameBoard.prop("inert", false);
       }
@@ -1307,14 +1331,12 @@
         const delta = Number($(".cell").css("width").replace("px", ""));
 
         player1Character.css({
-          opacity: 1,
           transform: `translate(${Number(xy1New[0]) * delta}px, ${
             Number(xy1New[1]) * delta
           }px)`,
         });
 
         player2Character.css({
-          opacity: 1,
           transform: `translate(${Number(xy2New[0]) * delta}px, ${
             Number(xy2New[1]) * delta
           }px)`,
