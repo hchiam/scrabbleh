@@ -190,7 +190,16 @@
         border-radius: 50%;
         transform: scale(0.5);
         font-size: 3rem;
+        @media (prefers-reduced-motion: no-preference) {
+          animation: flashing-dots 1s infinite alternate;
+        }
       }
+      @keyframes flashing-dots {
+        to {
+          background: peachpuff;
+        }
+      }
+
       #hiddenGameControls {
         pointer-events: none;
         display: flex;
