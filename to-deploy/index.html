@@ -414,6 +414,7 @@
           await listenForBroadcasts();
           initSubmit();
           initCancel();
+          initGameId();
           initGoToGameId();
           initGameBoard();
           initHiddenGameControls();
@@ -696,9 +697,29 @@
         });
       }
 
+      function initGameId() {
+        gameId.on("keyup change", () => {
+          formatGameId();
+        });
+      }
+
+      function formatGameId() {
+        const val = String(gameId.val());
+        const processedVal = splitIntoGroupsOf4FromLeft(val);
+        gameId.val(processedVal);
+      }
+
+      function splitIntoGroupsOf4FromLeft(val) {
+        return val
+          .replace(/\D/g, "")
+          .split(/(\d{4})/g)
+          .filter((x) => x)
+          .join(" ");
+      }
+
       function initGoToGameId() {
         $("#goToGameId").on("click", async () => {
-          const gameID = gameId.val();
+          const gameID = String(gameId.val()).replace(/\D/g, "");
           if (!gameBoard.text()) {
             await deleteGame();
           }
@@ -887,7 +908,8 @@
       }
 
       async function setupRealtimeUpdates() {
-        const gameID = gameId.val() || localStorage.gameId;
+        const gameID =
+          String(gameId.val()).replace(/\D/g, "") || localStorage.gameId;
         if (gameID) {
           await joinGameByCustomId(gameID);
         } else {
@@ -952,6 +974,7 @@
             }
 
             gameId.val(customId);
+            formatGameId();
             localStorage.gameId = customId;
 
             // Setting up real-time updates for the fetched game
@@ -1001,6 +1024,7 @@
           const gamesCollection = collection(db, "games");
           const randomId = getRandomId();
           gameId.val(randomId);
+          formatGameId();
           localStorage.gameId = randomId;
           player1Pieces = bagOfPieces.slice(0, 7);
           player2Pieces = bagOfPieces.slice(7, 14);
@@ -1081,7 +1105,7 @@
         const gameRef = doc(db, "games", currentGameFirebaseId);
 
         let data = {
-          id: String(gameId.val()),
+          id: String(gameId.val()).replace(/\D/g, ""),
           player1Score: player1Score,
           player2Score: player2Score,
           player1Pieces: player1Pieces,
@@ -1095,7 +1119,7 @@
         if (player2Uid) {
           // adding player 2 to join the game:
           data = {
-            id: String(gameId.val()),
+            id: String(gameId.val()).replace(/\D/g, ""),
             player2Uid: player2Uid,
           };
         }
@@ -1212,7 +1236,7 @@
         try {
           const gameRef = doc(db, "games", currentGameFirebaseId);
           await updateDoc(gameRef, {
-            id: String(gameId.val()),
+            id: String(gameId.val()).replace(/\D/g, ""),
             player1Pieces: player1Pieces,
             player2Pieces: player2Pieces,
             whoseTurn: whoseTurn,
