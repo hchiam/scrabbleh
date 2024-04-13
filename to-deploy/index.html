@@ -191,10 +191,10 @@
         transform: scale(0.5);
         font-size: 3rem;
         @media (prefers-reduced-motion: no-preference) {
-          animation: flashing-dots 1s infinite alternate;
+          animation: flashing-points 1s infinite alternate;
         }
       }
-      @keyframes flashing-dots {
+      @keyframes flashing-points {
         to {
           background: peachpuff;
         }
@@ -254,6 +254,10 @@
       #player2Character.consumer {
         background: yellow !important;
         color: black !important;
+      }
+      #player1Character:not(.consumer),
+      #player2Character:not(.consumer) {
+        transition: opacity 1s, transform 0.05s;
       }
       body.showingHiddenGame #player1Character,
       body.showingHiddenGame #player2Character {
@@ -326,6 +330,19 @@
         top: 0.5em;
         left: 0.6em;
         font-size: small;
+      }
+      body.showingHiddenGame .cell.wall {
+        background: red;
+        border-radius: 0;
+        transform: none;
+        @media (prefers-reduced-motion: no-preference) {
+          animation: flashing-walls 1s infinite alternate;
+        }
+      }
+      @keyframes flashing-walls {
+        to {
+          background: hotpink;
+        }
       }
     </style>
     <style id="dynamicStyle"></style>
@@ -475,6 +492,7 @@
       let xy1 = "";
       let xy2 = "";
       let consumer = "";
+      const wall = "*";
 
       scrabbleh.show();
       submit.hide();
@@ -848,9 +866,8 @@
             multiplier = "x3L";
           }
           const cellValue = gameBoardString[i].trim() ? gameBoardString[i] : "";
-          htmlString += `<button data-i="${i}" class="cell ${multiplier}" ${
-            style ? style : ""
-          }>${cellValue}</button>`;
+          const wallClass = cellValue === wall ? "wall" : "";
+          htmlString += `<button data-i="${i}" class="cell ${multiplier} ${wallClass}" ${style}>${cellValue}</button>`;
         }
 
         gameBoard.empty().append(htmlString);
@@ -1328,14 +1345,20 @@
             player1Character.removeClass("consumer");
             player2Character.addClass("consumer");
           }
+        } else {
+          gameBoard.find(".wall").removeClass("wall");
         }
       }
 
       async function updateHiddenGame(xy1 = "0,0", xy2 = "0,0") {
         const isPlayer1 = playerNumber === "player1";
-        const addedPoints = consumeCellPoints(isPlayer1 ? xy1 : xy2);
-        player1Score += isPlayer1 && isConsumer() ? addedPoints : 0;
-        player2Score += !isPlayer1 && isConsumer() ? addedPoints : 0;
+        if (isConsumer()) {
+          const addedPoints = consumeCellPoints(isPlayer1 ? xy1 : xy2);
+          player1Score += isPlayer1 ? addedPoints : 0;
+          player2Score += !isPlayer1 ? addedPoints : 0;
+        } else {
+          capturerCreatesWall(isPlayer1 ? xy1 : xy2);
+        }
         try {
           const gameRef = doc(db, "games", currentGameFirebaseId);
           const data = {
@@ -1352,7 +1375,7 @@
             consumer: consumer,
           };
           await updateDoc(gameRef, data);
-          console.log("Hidden game updated successfully", data);
+          console.log("Hidden game updated successfully");
 
           positionThePlayerCharacters(xy1, xy2);
 
@@ -1392,6 +1415,19 @@
             .join("");
         }
         return consumablePoints;
+      }
+
+      function capturerCreatesWall(xCommaY) {
+        const [x, y] = xCommaY.split(",");
+        const cell = cellAtXY(Number(x), Number(y));
+        const cellText = cell.text();
+        if (consumer !== "" && !isConsumer() && !cellText) {
+          cell.text(wall).addClass("wall");
+          // update game board:
+          gameBoardString = [...gameBoard.find(".cell")]
+            .map((x) => $(x).text() || " ")
+            .join("");
+        }
       }
 
       function cellAtXY(x, y) {
