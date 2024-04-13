@@ -1027,9 +1027,11 @@
               player1ScoreLabel.html("&nbsp;You:");
               player2ScoreLabel.html("&nbsp;P2:");
               player1Character.text("You").addClass("you");
+              player2Character.text("P2").removeClass("you");
             } else {
               player1ScoreLabel.html("&nbsp;P1:");
               player2ScoreLabel.html("&nbsp;You:");
+              player1Character.text("P1").removeClass("you");
               player2Character.text("You").addClass("you");
             }
 
@@ -1109,6 +1111,7 @@
           player1ScoreInput.val(0);
           player2ScoreInput.val(0);
           player1Character.text("You").addClass("you");
+          player2Character.text("P2").removeClass("you");
           updateWhoseTurn(playerNumber);
           // Add a new document with Firestore-generated unique ID
           const gameRef = await addDoc(gamesCollection, {
