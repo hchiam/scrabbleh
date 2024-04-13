@@ -1322,6 +1322,14 @@
         hiddenGameControls.toggleClass("showing", showingHiddenGame);
         gameBoard.prop("inert", false);
 
+        if (!showingHiddenGame) {
+          gameBoard.find(".wall").removeClass("wall").text("");
+          // update game board:
+          gameBoardString = [...gameBoard.find(".cell")]
+            .map((x) => $(x).text() || " ")
+            .join("");
+        }
+
         if (showingHiddenGame && !xy1 && !xy2) {
           const bottomLeft = `0,14`;
           const bottomRight = `14,14`;
@@ -1345,8 +1353,6 @@
             player1Character.removeClass("consumer");
             player2Character.addClass("consumer");
           }
-        } else {
-          gameBoard.find(".wall").removeClass("wall");
         }
       }
 
