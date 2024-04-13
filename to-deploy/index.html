@@ -1327,10 +1327,16 @@
       }
 
       async function updateHiddenGame(xy1 = "0,0", xy2 = "0,0") {
+        const isPlayer1 = playerNumber === "player1";
+        const addedPoints = consumeCellPoints(isPlayer1 ? xy1 : xy2);
+        player1Score += isPlayer1 && isConsumer() ? addedPoints : 0;
+        player2Score += !isPlayer1 && isConsumer() ? addedPoints : 0;
         try {
           const gameRef = doc(db, "games", currentGameFirebaseId);
-          await updateDoc(gameRef, {
+          const data = {
             id: String(gameId.val()).replace(/\D/g, ""),
+            player1Score: player1Score,
+            player2Score: player2Score,
             player1Pieces: player1Pieces,
             player2Pieces: player2Pieces,
             whoseTurn: whoseTurn,
@@ -1338,13 +1344,43 @@
             bagOfPieces: bagOfPieces,
             xy1: showingHiddenGame ? xy1 : "",
             xy2: showingHiddenGame ? xy2 : "",
-          });
+          };
+          await updateDoc(gameRef, data);
           console.log("Hidden game updated successfully");
 
           positionThePlayerCharacters(xy1, xy2);
+
+          player1ScoreInput.val(player1Score);
+          player2ScoreInput.val(player2Score);
         } catch (error) {
           console.error("Error updating hidden game: ", error);
         }
+      }
+
+      function isConsumer() {
+        return playerNumber === "player1"
+          ? player1Character.hasClass("consumer")
+          : player2Character.hasClass("consumer");
+      }
+
+      function consumeCellPoints(xCommaY) {
+        const [x, y] = xCommaY.split(",");
+        const cell = cellAtXY(Number(x), Number(y));
+        const cellText = cell.text();
+        const consumablePoints = cellText ? piecePoints[cellText] : 0;
+        if (consumablePoints) {
+          cell.text("");
+          // update game board:
+          gameBoardString = [...gameBoard.find(".cell")]
+            .map((x) => $(x).text() || " ")
+            .join("");
+        }
+        return consumablePoints;
+      }
+
+      function cellAtXY(x, y) {
+        const i = 15 * y + x;
+        return gameBoard.find(`.cell[data-i="${i}"]`);
       }
 
       function positionThePlayerCharacters(xy1, xy2) {
