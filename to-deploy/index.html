@@ -474,6 +474,7 @@
       let showingHiddenGame = false;
       let xy1 = "";
       let xy2 = "";
+      let consumer = "";
 
       scrabbleh.show();
       submit.hide();
@@ -1191,8 +1192,9 @@
           whoseTurn: whoseTurn,
           gameBoard: gameBoard,
           bagOfPieces: bagOfPieces,
-          xy1: "",
-          xy2: "",
+          xy1: xy1,
+          xy2: xy2,
+          consumer: consumer,
         };
         if (player2Uid) {
           // adding player 2 to join the game:
@@ -1291,6 +1293,9 @@
 
       window.toggleHiddenGameControls = toggleHiddenGameControls;
       async function toggleHiddenGameControls(show) {
+        const nothingToConsume = !gameBoard.find(".cell:not(:empty)").length;
+        if (nothingToConsume) return; // avoid infinite loop
+
         showingHiddenGame = show;
 
         // change styling:
@@ -1314,16 +1319,16 @@
         }
 
         if (showingHiddenGame) {
-          // TODO now: hidden game scoring
           if (player1Score < player2Score) {
+            consumer = "player1";
             player1Character.addClass("consumer");
+            player2Character.removeClass("consumer");
           } else {
+            consumer = "player2";
+            player1Character.removeClass("consumer");
             player2Character.addClass("consumer");
           }
         }
-
-        // TODO now: if chasing player catches consuming player, or nothing's left:
-        // then: toggleHiddenGameControls(false); and updateWhoseTurn(whoseTurn); // in case need to undo gameBoard.prop("inert", false);
       }
 
       async function updateHiddenGame(xy1 = "0,0", xy2 = "0,0") {
@@ -1344,23 +1349,34 @@
             bagOfPieces: bagOfPieces,
             xy1: showingHiddenGame ? xy1 : "",
             xy2: showingHiddenGame ? xy2 : "",
+            consumer: consumer,
           };
           await updateDoc(gameRef, data);
-          console.log("Hidden game updated successfully");
+          console.log("Hidden game updated successfully", data);
 
           positionThePlayerCharacters(xy1, xy2);
 
           player1ScoreInput.val(player1Score);
           player2ScoreInput.val(player2Score);
+
+          player1Character.toggleClass("consumer", consumer === "player1");
+          player2Character.toggleClass("consumer", consumer === "player2");
         } catch (error) {
           console.error("Error updating hidden game: ", error);
+        }
+
+        // TODO now: also end hidden game if chasing player catches consuming player
+        const nothingToConsume = !gameBoard.find(".cell:not(:empty)").length;
+        if (nothingToConsume) {
+          toggleHiddenGameControls(false); // watch out that this doesn't cause infinite loop
+          updateWhoseTurn(whoseTurn); // in case need to undo gameBoard.prop("inert", false);
         }
       }
 
       function isConsumer() {
         return playerNumber === "player1"
-          ? player1Character.hasClass("consumer")
-          : player2Character.hasClass("consumer");
+          ? consumer === "player1"
+          : consumer === "player2";
       }
 
       function consumeCellPoints(xCommaY) {
@@ -1368,7 +1384,7 @@
         const cell = cellAtXY(Number(x), Number(y));
         const cellText = cell.text();
         const consumablePoints = cellText ? piecePoints[cellText] : 0;
-        if (consumablePoints) {
+        if (consumablePoints && isConsumer()) {
           cell.text("");
           // update game board:
           gameBoardString = [...gameBoard.find(".cell")]

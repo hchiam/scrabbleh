@@ -97,7 +97,8 @@ service cloud.firestore {
           && request.resource.data.bagOfPieces is string
           && request.resource.data.bagOfPieces.size() <= 100
           && request.resource.data.xy1 is string
-          && request.resource.data.xy2 is string;
+          && request.resource.data.xy2 is string
+          && request.resource.data.consumer is string;
       }
 
 			function onlyAllowedFieldsArePresentForCreate() {
@@ -108,7 +109,7 @@ service cloud.firestore {
       }
 
 			function onlyAllowedFieldsArePresentForWrite() {
-        let allowedFields = ['id', /*'timestamp', 'player1Uid', 'player2Uid',*/ 'player1Score', 'player2Score', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2'];
+        let allowedFields = ['id', /*'timestamp', 'player1Uid', 'player2Uid',*/ 'player1Score', 'player2Score', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2', 'consumer'];
         let allowedFields_forPlayer2UidSetup = ['id', 'player2Uid'];
         // ensure no extra fields are added
         let hasOnlyAllowedFields = // TODO:
