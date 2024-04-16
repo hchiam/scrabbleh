@@ -634,15 +634,28 @@
             lettersPlacedDown.includes("E") || lettersPlacedDown.includes("H");
 
           // actually submit:
-          await updateGame(
-            currentGameFirebaseId,
-            gameBoardString,
-            player1Score,
-            player2Score,
-            player1Pieces,
-            player2Pieces,
-            whoseTurn
-          );
+          if (localStorage.playerUid) {
+            await updateGame(
+              currentGameFirebaseId,
+              gameBoardString,
+              player1Score,
+              player2Score,
+              player1Pieces,
+              player2Pieces,
+              whoseTurn,
+              localStorage.playerUid
+            );
+          } else {
+            await updateGame(
+              currentGameFirebaseId,
+              gameBoardString,
+              player1Score,
+              player2Score,
+              player1Pieces,
+              player2Pieces,
+              whoseTurn
+            );
+          }
 
           candidateCells.forEach((el) => {
             $(el)
@@ -1239,11 +1252,7 @@
           consumer: consumer,
         };
         if (player2Uid) {
-          // adding player 2 to join the game:
-          data = {
-            id: String(gameId.val()).replace(/\D/g, ""),
-            player2Uid: player2Uid,
-          };
+          data.player2Uid = player2Uid;
         }
 
         try {
