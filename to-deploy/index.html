@@ -1100,9 +1100,15 @@
             player2Pieces = gameData.player2Pieces;
             updateWhoseTurn(gameData.whoseTurn);
             initGameBoard();
-            toggleHiddenGameControls(
-              gameData.xy1 !== "" || gameData.xy2 !== ""
-            );
+            if (
+              !showingHiddenGame ||
+              gameData.xy1 === "" ||
+              gameData.xy2 === ""
+            ) {
+              toggleHiddenGameControls(
+                gameData.xy1 !== "" || gameData.xy2 !== ""
+              );
+            }
           } else {
             console.log("Could not set up real-time updates for a game doc.");
             gameId.val("");
@@ -1441,6 +1447,11 @@
         return gameBoard.find(`.cell[data-i="${i}"]`);
       }
 
+      function isWall(xyNew) {
+        const [x, y] = xyNew.split(",").map((val) => Number(val));
+        return cellAtXY(x, y).text() === wall;
+      }
+
       function positionThePlayerCharacters(xy1, xy2) {
         const xy1New = xy1.split(",").map((v) => minMax(0, Number(v), 14));
         const xy2New = xy2.split(",").map((v) => minMax(0, Number(v), 14));
@@ -1485,48 +1496,69 @@
             }
           }
         });
+        let motionTimeout = null;
         hiddenGameControls.find("#w").on("click", () => {
-          if (showingHiddenGame) {
+          if (showingHiddenGame && !motionTimeout) {
+            motionTimeout = setTimeout(() => {
+              motionTimeout = null;
+            }, 100);
             let xyNew = playerNumber === "player1" ? xy1 : xy2;
             xyNew = xyNew.split(",");
             xyNew[1] = minMax(0, (Number(xyNew[1]) || 0) - 1, 14);
             xyNew = xyNew.join(",");
-            xy1 = playerNumber === "player1" ? xyNew : xy1;
-            xy2 = playerNumber === "player1" ? xy2 : xyNew;
-            updateHiddenGame(xy1, xy2);
+            if (!isWall(xyNew) || !isConsumer()) {
+              xy1 = playerNumber === "player1" ? xyNew : xy1;
+              xy2 = playerNumber === "player1" ? xy2 : xyNew;
+              updateHiddenGame(xy1, xy2);
+            }
           }
         });
         hiddenGameControls.find("#a").on("click", () => {
-          if (showingHiddenGame) {
+          if (showingHiddenGame && !motionTimeout) {
+            motionTimeout = setTimeout(() => {
+              motionTimeout = null;
+            }, 100);
             let xyNew = playerNumber === "player1" ? xy1 : xy2;
             xyNew = xyNew.split(",");
             xyNew[0] = minMax(0, Number(xyNew[0]) - 1, 14);
             xyNew = xyNew.join(",");
-            xy1 = playerNumber === "player1" ? xyNew : xy1;
-            xy2 = playerNumber === "player1" ? xy2 : xyNew;
-            updateHiddenGame(xy1, xy2);
+            if (!isWall(xyNew) || !isConsumer()) {
+              xy1 = playerNumber === "player1" ? xyNew : xy1;
+              xy2 = playerNumber === "player1" ? xy2 : xyNew;
+              updateHiddenGame(xy1, xy2);
+            }
           }
         });
         hiddenGameControls.find("#s").on("click", () => {
-          if (showingHiddenGame) {
+          if (showingHiddenGame && !motionTimeout) {
+            motionTimeout = setTimeout(() => {
+              motionTimeout = null;
+            }, 100);
             let xyNew = playerNumber === "player1" ? xy1 : xy2;
             xyNew = xyNew.split(",");
             xyNew[1] = minMax(0, (Number(xyNew[1]) || 0) + 1, 14);
             xyNew = xyNew.join(",");
-            xy1 = playerNumber === "player1" ? xyNew : xy1;
-            xy2 = playerNumber === "player1" ? xy2 : xyNew;
-            updateHiddenGame(xy1, xy2);
+            if (!isWall(xyNew) || !isConsumer()) {
+              xy1 = playerNumber === "player1" ? xyNew : xy1;
+              xy2 = playerNumber === "player1" ? xy2 : xyNew;
+              updateHiddenGame(xy1, xy2);
+            }
           }
         });
         hiddenGameControls.find("#d").on("click", () => {
-          if (showingHiddenGame) {
+          if (showingHiddenGame && !motionTimeout) {
+            motionTimeout = setTimeout(() => {
+              motionTimeout = null;
+            }, 100);
             let xyNew = playerNumber === "player1" ? xy1 : xy2;
             xyNew = xyNew.split(",");
             xyNew[0] = minMax(0, Number(xyNew[0]) + 1, 14);
             xyNew = xyNew.join(",");
-            xy1 = playerNumber === "player1" ? xyNew : xy1;
-            xy2 = playerNumber === "player1" ? xy2 : xyNew;
-            updateHiddenGame(xy1, xy2);
+            if (!isWall(xyNew) || !isConsumer()) {
+              xy1 = playerNumber === "player1" ? xyNew : xy1;
+              xy2 = playerNumber === "player1" ? xy2 : xyNew;
+              updateHiddenGame(xy1, xy2);
+            }
           }
         });
       }
