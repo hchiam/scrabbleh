@@ -1124,6 +1124,7 @@
               toggleHiddenGameControls(
                 gameData.xy1 !== "" || gameData.xy2 !== ""
               );
+              if (gameData.xy1 || gameData.xy2) messageHiddenGame();
             }
           } else {
             console.log("Could not set up real-time updates for a game doc.");
@@ -1358,6 +1359,7 @@
           xy1 = bottomLeft;
           xy2 = bottomRight;
           updateHiddenGame(xy1, xy2);
+          messageHiddenGame();
         } else if (!showingHiddenGame && xy1 && xy2) {
           // need to hide/stop game:
           xy1 = "";
@@ -1724,6 +1726,20 @@
         addedPoints += currentWordPoints;
 
         return addedPoints;
+      }
+
+      function messageHiddenGame() {
+        const isPlayer1 = playerNumber === "player1";
+        const otherPlayer = `Player ${isPlayer1 ? "2" : "1"}`;
+        if (isConsumer()) {
+          alert(
+            `Eh? The hidden game has been triggered!\n\nYou can eat letters to get extra points before ${otherPlayer} catches you!`
+          );
+        } else {
+          alert(
+            `Eh? The hidden game has been triggered!\n\n${otherPlayer} can eat letters to get extra points before you catch them!`
+          );
+        }
       }
     </script>
   </body>
