@@ -109,7 +109,7 @@ service cloud.firestore {
       }
 
 			function onlyAllowedFieldsArePresentForWrite() {
-        let allowedFields = ['id', /*'timestamp',*/ 'player1Uid', 'player2Uid', 'player1Score', 'player2Score', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2', 'consumer'];
+        let allowedFields = ['id', /*'timestamp', 'player1Uid',*/ 'player2Uid', 'player1Score', 'player2Score', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2', 'consumer'];
         let allowedFields_forPlayer2UidSetup = ['id', 'player2Uid'];
         let gameDoc = get(/databases/$(database)/documents/games/$(gameId)).data;
         // ensure no extra fields are added
@@ -127,24 +127,22 @@ service cloud.firestore {
       }
 
       function isTurnValid() {
-      	let allowedFields_forPlayer2UidSetup = ['id', 'player2Uid'];
-        let hasOnlyAllowedFields_forPlayer2UidSetup = // TODO now
-        	// request.resource.data.keys().size() == allowedFields_forPlayer2UidSetup.size()
-        	// &&
-          request.resource.data.keys().hasAll(allowedFields_forPlayer2UidSetup);
+      	let minimumFields_forPlayer2UidSetup = ['id', 'player2Uid'];
+        let hasMinimumFields = request.resource.data.keys().hasAll(minimumFields_forPlayer2UidSetup);
+        // TODO: require must have ONLY two fields for setting up player
         
         let gameDoc = get(/databases/$(database)/documents/games/$(gameId)).data;
         
-        let wasPlayer1Turn = gameDoc.whoseTurn == 'player1' && gameDoc.player1Uid == request.resource.data.player1Uid; // not request.auth.uid;
-        let wasPlayer2Turn = gameDoc.whoseTurn == 'player2' && gameDoc.player2Uid == request.resource.data.player2Uid; // not request.auth.uid;
+        let isPlayer1Turn = gameDoc.whoseTurn == 'player1' && gameDoc.player1Uid == request.resource.data.player1Uid; // not request.auth.uid;
+        let isPlayer2Turn = gameDoc.whoseTurn == 'player2' && (gameDoc.player2Uid == "" || gameDoc.player2Uid == request.resource.data.player2Uid); // not request.auth.uid;
 
         // prevent editing the other player's pieces
-        let arePlayer1PiecesValid = wasPlayer2Turn && gameDoc.player1Pieces == request.resource.data.player1Pieces;
-        let arePlayer2PiecesValid = wasPlayer1Turn && gameDoc.player2Pieces == request.resource.data.player2Pieces;
+        let arePlayer2PiecesValid = isPlayer1Turn && gameDoc.player2Pieces == request.resource.data.player2Pieces;
+        let arePlayer1PiecesValid = isPlayer2Turn && gameDoc.player1Pieces == request.resource.data.player1Pieces;
 
 				let isValidTurn = arePlayer1PiecesValid || arePlayer2PiecesValid;
         return request.auth != null 
-        	&& hasOnlyAllowedFields_forPlayer2UidSetup
+        	&& hasMinimumFields
           && isValidTurn;
       }
     }

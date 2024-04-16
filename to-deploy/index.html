@@ -604,10 +604,10 @@
 
           const addedPoints = getPointsToAdd();
 
-          const wasPlayer1 = playerNumber === "player1";
+          const isPlayer1 = playerNumber === "player1";
 
-          player1Score += wasPlayer1 ? addedPoints : 0;
-          player2Score += wasPlayer1 ? 0 : addedPoints;
+          player1Score += isPlayer1 ? addedPoints : 0;
+          player2Score += isPlayer1 ? 0 : addedPoints;
           player1ScoreInput.val(player1Score);
           player2ScoreInput.val(player2Score);
 
@@ -618,11 +618,11 @@
           const piecesToAdd = bagOfPieces.slice(0, piecesToReplace);
           bagOfPieces = bagOfPieces.slice(piecesToReplace);
 
-          player1Pieces = wasPlayer1
+          player1Pieces = isPlayer1
             ? pieces.find(".piece").text() + piecesToAdd
             : player1Pieces;
 
-          player2Pieces = wasPlayer1
+          player2Pieces = isPlayer1
             ? player2Pieces
             : pieces.find(".piece").text() + piecesToAdd;
 
@@ -642,7 +642,7 @@
             player1Pieces,
             player2Pieces,
             whoseTurn,
-            localStorage.playerUid ? localStorage.playerUid : ""
+            !isPlayer1 && localStorage.playerUid ? localStorage.playerUid : ""
           );
 
           candidateCells.forEach((el) => {
@@ -655,7 +655,7 @@
           });
 
           updatePieces(
-            wasPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
+            isPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
           );
 
           dynamicStyle.text("");
@@ -1244,6 +1244,7 @@
         }
 
         try {
+          console.log("data", data);
           await updateDoc(gameRef, data);
           console.log("Game updated successfully");
         } catch (error) {
