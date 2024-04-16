@@ -1339,9 +1339,8 @@
         if (showingHiddenGame && !xy1 && !xy2) {
           const bottomLeft = `0,14`;
           const bottomRight = `14,14`;
-          const wasPlayer1 = playerNumber === "player1";
-          xy1 = wasPlayer1 ? bottomRight : bottomLeft;
-          xy2 = wasPlayer1 ? bottomLeft : bottomRight;
+          xy1 = bottomLeft;
+          xy2 = bottomRight;
           updateHiddenGame(xy1, xy2);
         } else if (!showingHiddenGame) {
           xy1 = "";
