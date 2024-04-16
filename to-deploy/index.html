@@ -1098,8 +1098,13 @@
             player2ScoreInput.val(player2Score);
             player1Pieces = gameData.player1Pieces;
             player2Pieces = gameData.player2Pieces;
+            xy1 = gameData.xy1;
+            xy2 = gameData.xy2;
             updateWhoseTurn(gameData.whoseTurn);
             initGameBoard();
+            if (xy1 !== "" || xy2 !== "") {
+              positionThePlayerCharacters(xy1, xy2);
+            }
             if (
               !showingHiddenGame ||
               gameData.xy1 === "" ||
