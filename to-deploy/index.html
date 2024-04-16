@@ -55,6 +55,11 @@
         padding-inline: 0;
         text-align: center;
       }
+      #player1ScoreInput.you,
+      #player2ScoreInput.you {
+        background: oklch(63% 0.25 30 / 15%);
+        color: red;
+      }
       #scrabbleh {
         color: white;
       }
@@ -257,6 +262,8 @@
       }
       #player1Character:not(.consumer),
       #player2Character:not(.consumer) {
+        background: red !important;
+        color: white !important;
         transition: opacity 1s, transform 0.05s;
       }
       body.showingHiddenGame #player1Character,
@@ -1044,11 +1051,15 @@
             if (wasPlayer1) {
               player1ScoreLabel.html("&nbsp;You:");
               player2ScoreLabel.html("&nbsp;P2:");
+              player1ScoreInput.addClass("you");
+              player2ScoreInput.removeClass("you");
               player1Character.text("You").addClass("you");
               player2Character.text("P2").removeClass("you");
             } else {
               player1ScoreLabel.html("&nbsp;P1:");
               player2ScoreLabel.html("&nbsp;You:");
+              player1ScoreInput.removeClass("you");
+              player2ScoreInput.addClass("you");
               player1Character.text("P1").removeClass("you");
               player2Character.text("You").addClass("you");
             }
@@ -1137,6 +1148,8 @@
           playerNumber = "player1";
           player1ScoreLabel.html("&nbsp;You:");
           player2ScoreLabel.html("&nbsp;P2:");
+          player1ScoreInput.addClass("you");
+          player2ScoreInput.removeClass("you");
           player1ScoreInput.val(0);
           player2ScoreInput.val(0);
           player1Character.text("You").addClass("you");
