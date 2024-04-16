@@ -634,28 +634,16 @@
             lettersPlacedDown.includes("E") || lettersPlacedDown.includes("H");
 
           // actually submit:
-          if (localStorage.playerUid) {
-            await updateGame(
-              currentGameFirebaseId,
-              gameBoardString,
-              player1Score,
-              player2Score,
-              player1Pieces,
-              player2Pieces,
-              whoseTurn,
-              localStorage.playerUid
-            );
-          } else {
-            await updateGame(
-              currentGameFirebaseId,
-              gameBoardString,
-              player1Score,
-              player2Score,
-              player1Pieces,
-              player2Pieces,
-              whoseTurn
-            );
-          }
+          await updateGame(
+            currentGameFirebaseId,
+            gameBoardString,
+            player1Score,
+            player2Score,
+            player1Pieces,
+            player2Pieces,
+            whoseTurn,
+            localStorage.playerUid ? localStorage.playerUid : ""
+          );
 
           candidateCells.forEach((el) => {
             $(el)
