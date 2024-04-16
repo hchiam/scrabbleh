@@ -1321,9 +1321,6 @@
 
       window.toggleHiddenGameControls = toggleHiddenGameControls;
       async function toggleHiddenGameControls(show) {
-        const nothingToConsume = !gameBoard.find(".cell:not(:empty)").length;
-        if (nothingToConsume) return; // avoid infinite loop
-
         showingHiddenGame = show;
 
         // change styling:
@@ -1342,12 +1339,14 @@
         }
 
         if (showingHiddenGame && !xy1 && !xy2) {
+          // need to show/start game:
           const bottomLeft = `0,14`;
           const bottomRight = `14,14`;
           xy1 = bottomLeft;
           xy2 = bottomRight;
           updateHiddenGame(xy1, xy2);
-        } else if (!showingHiddenGame) {
+        } else if (!showingHiddenGame && xy1 && xy2) {
+          // need to hide/stop game:
           xy1 = "";
           xy2 = "";
           updateHiddenGame(xy1, xy2);
@@ -1404,9 +1403,11 @@
           console.error("Error updating hidden game: ", error);
         }
 
-        // TODO now: also end hidden game if chasing player catches consuming player
+        const caughtConsumer = xy1 === xy2 && xy1 !== "" && xy2 !== "";
         const nothingToConsume = !gameBoard.find(".cell:not(:empty)").length;
-        if (nothingToConsume) {
+        if (caughtConsumer || nothingToConsume) {
+          xy1 = "";
+          xy2 = "";
           toggleHiddenGameControls(false); // watch out that this doesn't cause infinite loop
           updateWhoseTurn(whoseTurn); // in case need to undo gameBoard.prop("inert", false);
         }

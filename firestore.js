@@ -112,11 +112,11 @@ service cloud.firestore {
         let allowedFields = ['id', /*'timestamp', 'player1Uid', 'player2Uid',*/ 'player1Score', 'player2Score', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2', 'consumer'];
         let allowedFields_forPlayer2UidSetup = ['id', 'player2Uid'];
         // ensure no extra fields are added
-        let hasOnlyAllowedFields = // TODO:
+        let hasOnlyAllowedFields = // TODO now:
         	// request.resource.data.keys().size() == allowedFields.size()
         	// &&
           request.resource.data.keys().hasAll(allowedFields);
-        let hasOnlyAllowedFields_forPlayer2UidSetup = // TODO:
+        let hasOnlyAllowedFields_forPlayer2UidSetup = // TODO now:
         	// request.resource.data.keys().size() == allowedFields_forPlayer2UidSetup.size()
         	// &&
           request.resource.data.keys().hasAll(allowedFields_forPlayer2UidSetup);
@@ -125,7 +125,7 @@ service cloud.firestore {
 
       function isTurnValid() {
       	let allowedFields_forPlayer2UidSetup = ['id', 'player2Uid'];
-        let hasOnlyAllowedFields_forPlayer2UidSetup = // TODO:
+        let hasOnlyAllowedFields_forPlayer2UidSetup = // TODO now:
         	// request.resource.data.keys().size() == allowedFields_forPlayer2UidSetup.size()
         	// &&
           request.resource.data.keys().hasAll(allowedFields_forPlayer2UidSetup);
