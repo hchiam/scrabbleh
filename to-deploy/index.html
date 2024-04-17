@@ -1565,19 +1565,23 @@
       }
 
       function initHiddenGameControls() {
-        $("body").on("keypress", (event) => {
+        $("body").on("keydown", (event) => {
           if (showingHiddenGame) {
             switch (event.key) {
               case "w":
+              case "ArrowUp":
                 hiddenGameControls.find("#w").click();
                 break;
               case "a":
+              case "ArrowLeft":
                 hiddenGameControls.find("#a").click();
                 break;
               case "s":
+              case "ArrowDown":
                 hiddenGameControls.find("#s").click();
                 break;
               case "d":
+              case "ArrowRight":
                 hiddenGameControls.find("#d").click();
                 break;
             }
