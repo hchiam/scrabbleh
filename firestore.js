@@ -123,8 +123,8 @@ service cloud.firestore {
         
         let hasOnlyAllowedFields_forPlayer2 = 
         	request.resource.data.player2Uid != ""
-          &&
-        	request.resource.data.player2Uid == gameDoc.player2Uid
+          && // also enable joining when DB player2Uid == "" still
+        	(request.resource.data.player2Uid == gameDoc.player2Uid || gameDoc.player2Uid == "")
         	&&
           // checking size doesn't work, but affectedKeys hasOnly works:
         	// request.resource.data.keys().size() == allowedFields_forPlayer2.size()
