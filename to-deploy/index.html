@@ -31,12 +31,12 @@
       }
       #submitContainer {
         /* position: fixed;
-        top: 0;
-        left: 0;
-        padding: 1rem;
-        z-index: var(--z-submitContainer);
-        display: flex;
-        gap: 1rem; */
+              top: 0;
+              left: 0;
+              padding: 1rem;
+              z-index: var(--z-submitContainer);
+              display: flex;
+              gap: 1rem; */
       }
       #submitContainer > * {
         margin-block-end: 1rem;
@@ -393,6 +393,70 @@
       @keyframes flashing-walls {
         to {
           background: hotpink;
+        }
+      }
+      #splashScreen {
+        content: "ScrabblEh?";
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        background: black;
+        margin: -1rem;
+        border-radius: 0;
+        z-index: 2;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        animation: splashScreen-fade-out 5s forwards;
+      }
+      @keyframes splashScreen-fade-out {
+        to {
+          opacity: 0;
+          pointer-events: none;
+        }
+      }
+      #splashScreen * {
+        background: transparent;
+      }
+      #splashScreen h1 {
+        font-size: 10dvmin;
+        font-weight: bolder;
+        -webkit-text-fill-color: white;
+        -webkit-text-stroke: 2dvmin red;
+        paint-order: stroke fill;
+      }
+      #splashScreen h1 > span {
+        display: inline-block;
+      }
+      #splashScreen .eh {
+        -webkit-text-fill-color: red;
+        -webkit-text-stroke: 2dvmin white;
+        margin: 0.75rem;
+        transform: rotate(-45deg);
+        animation: splashScreen-animate-eh 0.5s forwards;
+      }
+      @keyframes splashScreen-animate-eh {
+        to {
+          transform: rotate(10deg);
+        }
+      }
+      #splashScreen h1 > span:not(.eh):first-child {
+        transform: translate(-50dvw);
+        animation: splashScreen-animate-first-child 0.5s forwards;
+      }
+      @keyframes splashScreen-animate-first-child {
+        to {
+          transform: translate(0dvw) rotate(-5deg);
+        }
+      }
+      #splashScreen h1 > span:not(.eh):last-child {
+        transform: translate(+50dvw);
+        animation: splashScreen-animate-last-child 0.5s forwards;
+      }
+      @keyframes splashScreen-animate-last-child {
+        to {
+          transform: translate(0dvw) rotate(35deg);
         }
       }
     </style>
@@ -1838,5 +1902,11 @@
         }
       }
     </script>
+    <div id="splashScreen">
+      <div>
+        <h1><span>Scrabbl</span><span class="eh">Eh</span><span>?</span></h1>
+        <p>(This is just a toy project to test things out.)</p>
+      </div>
+    </div>
   </body>
 </html>
