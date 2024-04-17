@@ -1054,7 +1054,8 @@
             player2Pieces = gameData.player2Pieces;
             isP1OrP2 =
               localStorage.playerUid === gameData.player1Uid ||
-              localStorage.playerUid === gameData.player2Uid;
+              localStorage.playerUid === gameData.player2Uid ||
+              gameData.player2Uid === "";
             const isPlayer1 = localStorage.playerUid === gameData.player1Uid;
             playerNumber = isPlayer1 ? "player1" : "player2";
             updateWhoseTurn(gameData.whoseTurn); // depends on whether player1 already played
@@ -1063,9 +1064,10 @@
             );
 
             if (!isP1OrP2) {
-              submit.add(cancel).add(pieces).hide();
+              pieces.hide();
               spectator.show();
             } else {
+              pieces.show();
               spectator.hide();
               if (isPlayer1) {
                 player1ScoreLabel.html("&nbsp;You:");
