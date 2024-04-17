@@ -11,8 +11,8 @@ service cloud.firestore {
     
     // match any document in the 'games' collection
     match /games/{gameId} {
-      // allow anyone to join a game // TODO: as long as we don't have two players already
-      allow read: if true; // !hasTwoPlayers();
+      // allow anyone to join a game
+      allow read: if true;
       // restrict deleting game to players of game
       allow delete: if isPlayerOfGame();
       
@@ -25,11 +25,6 @@ service cloud.firestore {
       allow update: if isTurnValid()
         && isWriteDataValid()
         && isCalm();
-      
-      // function hasTwoPlayers() {
-      // 	return resource.data.player1Uid != null
-      //   	&& resource.data.player2Uid != null;
-      // }
       
       function isPlayerOfGame() {
       	return (resource.data.player1Uid != null && resource.data.player1Uid == request.auth.uid)
@@ -143,10 +138,6 @@ service cloud.firestore {
       }
       
       function isTurnValid() {
-      	// let minimumFields_forPlayer2UidSetup = ['id', 'player2Uid'];
-        // let hasMinimumFields = request.resource.data.keys().hasAll(minimumFields_forPlayer2UidSetup);
-        // TODO now: commented above - require must have ONLY two fields for setting up player
-        
         let gameDoc = get(/databases/$(database)/documents/games/$(gameId)).data;
         
         let isPlayer1Turn = gameDoc.whoseTurn == 'player1' && gameDoc.player1Uid == request.resource.data.player1Uid; // not request.auth.uid;
@@ -157,8 +148,7 @@ service cloud.firestore {
         let arePlayer1PiecesValid = isPlayer2Turn && gameDoc.player1Pieces == request.resource.data.player1Pieces;
 
 				let isValidTurn = arePlayer1PiecesValid || arePlayer2PiecesValid;
-        return request.auth != null 
-        	// && hasMinimumFields
+        return request.auth != null
           && isValidTurn;
       }
     }
