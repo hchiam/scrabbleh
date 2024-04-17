@@ -1481,7 +1481,9 @@
           player2Character.toggleClass("consumer", consumer === "player2");
 
           const caughtConsumer = xy1 === xy2 && xy1 !== "" && xy2 !== "";
-          const nothingToConsume = !gameBoard.find(".cell:not(:empty)").length;
+          const nothingToConsume = !gameBoard.find(
+            ".cell:not(:empty):not(.wall)"
+          ).length;
           if (caughtConsumer || nothingToConsume) {
             xy1 = "";
             xy2 = "";
