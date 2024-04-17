@@ -87,6 +87,16 @@
           color: white;
         }
       }
+      #feedback {
+        text-decoration: none;
+        margin: 0.25rem;
+        position: fixed;
+        right: 0;
+        top: 0;
+      }
+      #feedback:after {
+        content: "";
+      }
       #pieces {
         /*margin-block-start: 2.5rem;*/ /* so #submitContainer doesn't cover top */
         /* margin-block-start: 1rem; */
@@ -404,6 +414,15 @@
       <span id="scrabbleh">Scrabbl<span class="eh">Eh</span>?</span>
       <button id="submit">Submit</button>
       <button id="cancel">Cancel</button>
+      <a
+        id="feedback"
+        aria-label="Feedback"
+        title="Feedback"
+        href="https://forms.gle/GhA9dSnkfX14XqyQ9"
+        target="_blank"
+        rel="noopener noreferrer"
+        >💬</a
+      >
       <p id="spectator">(You are spectating P1 and P2.)</p>
     </div>
     <div id="pieces"></div>
