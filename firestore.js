@@ -104,8 +104,8 @@ service cloud.firestore {
 			function onlyAllowedFieldsArePresentForCreate() {
         let allowedFields = ['id', 'timestamp', 'player1Uid', 'player2Uid', 'player1Score', 'player2Score', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2'];
         // ensure no extra fields are added
-        return request.resource.data.keys().size() == allowedFields.size() // TODO now
-          && request.resource.data.keys().hasAll(allowedFields);
+        return request.resource.data.keys().size() == allowedFields.size()
+        	&& request.resource.data.keys().hasOnly(allowedFields);
       }
 
 			function onlyAllowedFieldsArePresentForWrite() {
