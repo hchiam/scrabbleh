@@ -38,6 +38,9 @@
         display: flex;
         gap: 1rem; */
       }
+      #submitContainer > * {
+        margin-block-end: 1rem;
+      }
       #gameId {
         width: 16ch;
         font-family: monospace;
@@ -61,6 +64,7 @@
         color: red;
       }
       #scrabbleh {
+        display: inline-block;
         color: white;
       }
       #scrabbleh .eh {
@@ -85,7 +89,7 @@
       }
       #pieces {
         /*margin-block-start: 2.5rem;*/ /* so #submitContainer doesn't cover top */
-        margin-block-start: 1rem;
+        /* margin-block-start: 1rem; */
         margin-block-end: 1rem;
       }
       body.showingHiddenGame #pieces {
