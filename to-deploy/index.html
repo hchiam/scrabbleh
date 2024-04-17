@@ -124,6 +124,12 @@
       body.showingHiddenGame .piece {
         pointer-events: none;
       }
+      #spectator {
+        display: none;
+        color: yellow;
+        font-weight: bold;
+        margin-block: 1rem;
+      }
       #gameBoardWrapper {
         overflow: auto;
       }
@@ -370,6 +376,7 @@
       <span id="scrabbleh">Scrabbl<span class="eh">Eh</span>?</span>
       <button id="submit">Submit</button>
       <button id="cancel">Cancel</button>
+      <p id="spectator">(You are spectating.)</p>
     </div>
     <div id="pieces"></div>
     <div id="gameBoardWrapper">
@@ -453,6 +460,7 @@
       let player2Pieces = "";
       let playerNumber = "";
       let whoseTurn = "";
+      let isP1OrP2 = false;
       const piecePoints = {
         // "?": 0,
         E: 1,
@@ -486,6 +494,7 @@
       const scrabbleh = $("#scrabbleh");
       const submit = $("#submit");
       const cancel = $("#cancel");
+      const spectator = $("#spectator");
       const gameId = $("#gameId");
       const pieces = $("#pieces");
       const gameBoard = $("#gameBoard");
@@ -1043,6 +1052,9 @@
             player2ScoreInput.val(player2Score);
             player1Pieces = gameData.player1Pieces;
             player2Pieces = gameData.player2Pieces;
+            isP1OrP2 =
+              localStorage.playerUid === gameData.player1Uid ||
+              localStorage.playerUid === gameData.player2Uid;
             const isPlayer1 = localStorage.playerUid === gameData.player1Uid;
             playerNumber = isPlayer1 ? "player1" : "player2";
             updateWhoseTurn(gameData.whoseTurn); // depends on whether player1 already played
@@ -1050,20 +1062,26 @@
               isPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
             );
 
-            if (isPlayer1) {
-              player1ScoreLabel.html("&nbsp;You:");
-              player2ScoreLabel.html("&nbsp;P2:");
-              player1ScoreInput.addClass("you");
-              player2ScoreInput.removeClass("you");
-              player1Character.text("You").addClass("you");
-              player2Character.text("P2").removeClass("you");
+            if (!isP1OrP2) {
+              submit.add(cancel).add(pieces).hide();
+              spectator.show();
             } else {
-              player1ScoreLabel.html("&nbsp;P1:");
-              player2ScoreLabel.html("&nbsp;You:");
-              player1ScoreInput.removeClass("you");
-              player2ScoreInput.addClass("you");
-              player1Character.text("P1").removeClass("you");
-              player2Character.text("You").addClass("you");
+              spectator.hide();
+              if (isPlayer1) {
+                player1ScoreLabel.html("&nbsp;You:");
+                player2ScoreLabel.html("&nbsp;P2:");
+                player1ScoreInput.addClass("you");
+                player2ScoreInput.removeClass("you");
+                player1Character.text("You").addClass("you");
+                player2Character.text("P2").removeClass("you");
+              } else {
+                player1ScoreLabel.html("&nbsp;P1:");
+                player2ScoreLabel.html("&nbsp;You:");
+                player1ScoreInput.removeClass("you");
+                player2ScoreInput.addClass("you");
+                player1Character.text("P1").removeClass("you");
+                player2Character.text("You").addClass("you");
+              }
             }
 
             const canAddPlayer2 = gameData.player2Uid === "";
@@ -1333,7 +1351,7 @@
           .add(cancel)
           .add(pieces)
           .add(gameBoard)
-          .prop("inert", whoseTurn !== playerNumber);
+          .prop("inert", whoseTurn !== playerNumber || !isP1OrP2);
       }
 
       window.toggleHiddenGameControls = toggleHiddenGameControls;
