@@ -376,7 +376,7 @@
       <span id="scrabbleh">Scrabbl<span class="eh">Eh</span>?</span>
       <button id="submit">Submit</button>
       <button id="cancel">Cancel</button>
-      <p id="spectator">(You are spectating.)</p>
+      <p id="spectator">(You are spectating P1 and P2.)</p>
     </div>
     <div id="pieces"></div>
     <div id="gameBoardWrapper">
@@ -643,7 +643,7 @@
             lettersPlacedDown.includes("E") || lettersPlacedDown.includes("H");
 
           // actually submit:
-          await updateGame(
+          const updateGameSuccess = await updateGame(
             currentGameFirebaseId,
             gameBoardString,
             player1Score,
@@ -654,35 +654,36 @@
             isPlayer1 ? localStorage.playerUid : "",
             isPlayer1 ? "" : localStorage.playerUid
           );
+          if (updateGameSuccess) {
+            candidateCells.forEach((el) => {
+              $(el)
+                .removeClass(
+                  "A B C D E F G H I J K L M N O P W R S T U V W X Y Z"
+                )
+                .removeClass("x3W x2W x3L x2L") // can't reuse multipliers
+                .removeAttr("style");
+            });
 
-          candidateCells.forEach((el) => {
-            $(el)
-              .removeClass(
-                "A B C D E F G H I J K L M N O P W R S T U V W X Y Z"
-              )
-              .removeClass("x3W x2W x3L x2L") // can't reuse multipliers
-              .removeAttr("style");
-          });
+            updatePieces(
+              isPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
+            );
 
-          updatePieces(
-            isPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
-          );
+            dynamicStyle.text("");
 
-          dynamicStyle.text("");
+            gameBoard
+              .find(".candidateFirstLetter, .candidate")
+              .removeClass("candidateFirstLetter")
+              .removeClass("candidate");
 
-          gameBoard
-            .find(".candidateFirstLetter, .candidate")
-            .removeClass("candidateFirstLetter")
-            .removeClass("candidate");
+            submit.add(cancel).removeClass("haveCandidate");
 
-          submit.add(cancel).removeClass("haveCandidate");
+            scrabbleh.show();
+            submit.text("Submit").hide();
+            cancel.text("Cancel").hide();
 
-          scrabbleh.show();
-          submit.text("Submit").hide();
-          cancel.text("Cancel").hide();
-
-          if (placedDownEOrH) {
-            toggleHiddenGameControls(true);
+            if (placedDownEOrH) {
+              toggleHiddenGameControls(true);
+            }
           }
         });
       }
@@ -1022,10 +1023,12 @@
           await joinGameByCustomId(gameID);
         } else {
           currentGameFirebaseId = await createGame();
-          if (playerNumber === "player1") {
-            updatePieces(player1Pieces.split(""));
-          } else {
-            updatePieces(player2Pieces.split(""));
+          if (currentGameFirebaseId) {
+            if (playerNumber === "player1") {
+              updatePieces(player1Pieces.split(""));
+            } else {
+              updatePieces(player2Pieces.split(""));
+            }
           }
         }
       }
@@ -1088,7 +1091,7 @@
 
             const canAddPlayer2 = gameData.player2Uid === "";
             if (canAddPlayer2) {
-              updateGame(
+              const updateGameSuccess = updateGame(
                 currentGameFirebaseId,
                 gameBoardString,
                 player1Score,
@@ -1099,6 +1102,8 @@
                 isPlayer1 ? localStorage.playerUid : "",
                 isPlayer1 ? "" : localStorage.playerUid
               );
+
+              if (!updateGameSuccess) return;
             }
 
             gameId.val(customId);
@@ -1272,8 +1277,10 @@
         try {
           await updateDoc(gameRef, data);
           console.log("Game updated successfully");
+          return true;
         } catch (error) {
           console.error("Error updating game: ", error);
+          return false;
         }
       }
 
@@ -1357,16 +1364,16 @@
       }
 
       async function toggleHiddenGameControls(show) {
-        if (!isP1OrP2) return;
-
         showingHiddenGame = show;
 
         // change styling:
         $("body").toggleClass("showingHiddenGame", showingHiddenGame);
 
-        // update wasd controls visibility:
-        hiddenGameControls.toggleClass("showing", showingHiddenGame);
-        gameBoard.prop("inert", false);
+        if (isP1OrP2) {
+          // update wasd controls visibility:
+          hiddenGameControls.toggleClass("showing", showingHiddenGame);
+          gameBoard.prop("inert", false);
+        }
 
         if (!showingHiddenGame) {
           gameBoard.find(".wall").removeClass("wall").text("");
@@ -1438,17 +1445,17 @@
 
           player1Character.toggleClass("consumer", consumer === "player1");
           player2Character.toggleClass("consumer", consumer === "player2");
+
+          const caughtConsumer = xy1 === xy2 && xy1 !== "" && xy2 !== "";
+          const nothingToConsume = !gameBoard.find(".cell:not(:empty)").length;
+          if (caughtConsumer || nothingToConsume) {
+            xy1 = "";
+            xy2 = "";
+            toggleHiddenGameControls(false); // watch out that this doesn't cause infinite loop
+            updateWhoseTurn(whoseTurn); // in case need to undo gameBoard.prop("inert", false);
+          }
         } catch (error) {
           console.error("Error updating hidden game: ", error);
-        }
-
-        const caughtConsumer = xy1 === xy2 && xy1 !== "" && xy2 !== "";
-        const nothingToConsume = !gameBoard.find(".cell:not(:empty)").length;
-        if (caughtConsumer || nothingToConsume) {
-          xy1 = "";
-          xy2 = "";
-          toggleHiddenGameControls(false); // watch out that this doesn't cause infinite loop
-          updateWhoseTurn(whoseTurn); // in case need to undo gameBoard.prop("inert", false);
         }
       }
 
@@ -1542,7 +1549,7 @@
         });
         let motionTimeout = null;
         hiddenGameControls.find("#w").on("click", () => {
-          if (showingHiddenGame && !motionTimeout) {
+          if (showingHiddenGame && !motionTimeout && isP1OrP2) {
             motionTimeout = setTimeout(() => {
               motionTimeout = null;
             }, 100);
@@ -1558,7 +1565,7 @@
           }
         });
         hiddenGameControls.find("#a").on("click", () => {
-          if (showingHiddenGame && !motionTimeout) {
+          if (showingHiddenGame && !motionTimeout && isP1OrP2) {
             motionTimeout = setTimeout(() => {
               motionTimeout = null;
             }, 100);
@@ -1574,7 +1581,7 @@
           }
         });
         hiddenGameControls.find("#s").on("click", () => {
-          if (showingHiddenGame && !motionTimeout) {
+          if (showingHiddenGame && !motionTimeout && isP1OrP2) {
             motionTimeout = setTimeout(() => {
               motionTimeout = null;
             }, 100);
@@ -1590,7 +1597,7 @@
           }
         });
         hiddenGameControls.find("#d").on("click", () => {
-          if (showingHiddenGame && !motionTimeout) {
+          if (showingHiddenGame && !motionTimeout && isP1OrP2) {
             motionTimeout = setTimeout(() => {
               motionTimeout = null;
             }, 100);
@@ -1753,6 +1760,8 @@
       }
 
       function messageHiddenGame() {
+        if (!isP1OrP2) return;
+
         const isPlayer1 = playerNumber === "player1";
         const otherPlayer = `Player ${isPlayer1 ? "2" : "1"}`;
         if (isConsumer()) {
