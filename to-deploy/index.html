@@ -1370,6 +1370,12 @@
         $("body").toggleClass("showingHiddenGame", showingHiddenGame);
 
         if (isP1OrP2) {
+          $("#hiddenGameControls").show();
+        } else {
+          $("#hiddenGameControls").hide();
+        }
+
+        if (isP1OrP2) {
           // update wasd controls visibility:
           hiddenGameControls.toggleClass("showing", showingHiddenGame);
           gameBoard.prop("inert", false);
