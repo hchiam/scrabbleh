@@ -1356,8 +1356,9 @@
           .prop("inert", whoseTurn !== playerNumber || !isP1OrP2);
       }
 
-      window.toggleHiddenGameControls = toggleHiddenGameControls;
       async function toggleHiddenGameControls(show) {
+        if (!isP1OrP2) return;
+
         showingHiddenGame = show;
 
         // change styling:
