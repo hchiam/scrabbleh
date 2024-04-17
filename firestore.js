@@ -104,32 +104,48 @@ service cloud.firestore {
 			function onlyAllowedFieldsArePresentForCreate() {
         let allowedFields = ['id', 'timestamp', 'player1Uid', 'player2Uid', 'player1Score', 'player2Score', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2'];
         // ensure no extra fields are added
-        return request.resource.data.keys().size() == allowedFields.size()
+        return request.resource.data.keys().size() == allowedFields.size() // TODO now
           && request.resource.data.keys().hasAll(allowedFields);
       }
 
 			function onlyAllowedFieldsArePresentForWrite() {
-        let allowedFields = ['id', /*'timestamp', 'player1Uid',*/ 'player2Uid', 'player1Score', 'player2Score', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2', 'consumer'];
-        let allowedFields_forPlayer2UidSetup = ['id', 'player2Uid'];
+        let allowedFields_forPlayer1 = ['id', /*'timestamp',*/ 'player1Uid', 'player1Score', 'player2Score', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2', 'consumer'];
+        let allowedFields_forPlayer2 = ['id', /*'timestamp',*/ 'player2Uid', 'player1Score', 'player2Score', 'player1Pieces', 'player2Pieces', 'whoseTurn', 'gameBoard', 'bagOfPieces', 'xy1', 'xy2', 'consumer'];
+        
         let gameDoc = get(/databases/$(database)/documents/games/$(gameId)).data;
+        
         // ensure no extra fields are added
-        let hasOnlyAllowedFields = // TODO now
-        	// request.resource.data.keys().size() == allowedFields.size()
-        	// &&
-          (request.resource.data.player1Uid == gameDoc.player1Uid || request.resource.data.player2Uid == gameDoc.player2Uid)
+        
+        let hasOnlyAllowedFields_forPlayer1 = 
+        	request.resource.data.player1Uid != ""
           &&
-          request.resource.data.keys().hasAll(allowedFields);
-        let hasOnlyAllowedFields_forPlayer2UidSetup = // TODO now
-        	// request.resource.data.keys().size() == allowedFields_forPlayer2UidSetup.size()
+        	request.resource.data.player1Uid == gameDoc.player1Uid
+        	&&
+          // checking size doesn't work, but affectedKeys hasOnly works:
+        	// request.resource.data.keys().size() == allowedFields_forPlayer1.size()
         	// &&
-          request.resource.data.keys().hasAll(allowedFields_forPlayer2UidSetup);
-        return hasOnlyAllowedFields || hasOnlyAllowedFields_forPlayer2UidSetup;
+        	request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedFields_forPlayer1);
+        
+        let hasOnlyAllowedFields_forPlayer2 = 
+        	request.resource.data.player2Uid != ""
+          &&
+        	request.resource.data.player2Uid == gameDoc.player2Uid
+        	&&
+          // checking size doesn't work, but affectedKeys hasOnly works:
+        	// request.resource.data.keys().size() == allowedFields_forPlayer2.size()
+        	// &&
+        	request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedFields_forPlayer2);
+        
+        return 
+        	hasOnlyAllowedFields_forPlayer1
+        	||
+        	hasOnlyAllowedFields_forPlayer2;
       }
-
+      
       function isTurnValid() {
-      	let minimumFields_forPlayer2UidSetup = ['id', 'player2Uid'];
-        let hasMinimumFields = request.resource.data.keys().hasAll(minimumFields_forPlayer2UidSetup);
-        // TODO: require must have ONLY two fields for setting up player
+      	// let minimumFields_forPlayer2UidSetup = ['id', 'player2Uid'];
+        // let hasMinimumFields = request.resource.data.keys().hasAll(minimumFields_forPlayer2UidSetup);
+        // TODO now: commented above - require must have ONLY two fields for setting up player
         
         let gameDoc = get(/databases/$(database)/documents/games/$(gameId)).data;
         
@@ -142,7 +158,7 @@ service cloud.firestore {
 
 				let isValidTurn = arePlayer1PiecesValid || arePlayer2PiecesValid;
         return request.auth != null 
-        	&& hasMinimumFields
+        	// && hasMinimumFields
           && isValidTurn;
       }
     }

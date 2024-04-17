@@ -57,7 +57,7 @@
       }
       #player1ScoreInput.you,
       #player2ScoreInput.you {
-        background: oklch(63% 0.25 30 / 15%);
+        background: oklch(100% 0 0 / 16%);
         color: red;
       }
       #scrabbleh {
@@ -642,7 +642,8 @@
             player1Pieces,
             player2Pieces,
             whoseTurn,
-            !isPlayer1 && localStorage.playerUid ? localStorage.playerUid : ""
+            isPlayer1 ? localStorage.playerUid : "",
+            isPlayer1 ? "" : localStorage.playerUid
           );
 
           candidateCells.forEach((el) => {
@@ -1042,14 +1043,14 @@
             player2ScoreInput.val(player2Score);
             player1Pieces = gameData.player1Pieces;
             player2Pieces = gameData.player2Pieces;
-            const wasPlayer1 = localStorage.playerUid === gameData.player1Uid;
-            playerNumber = wasPlayer1 ? "player1" : "player2";
+            const isPlayer1 = localStorage.playerUid === gameData.player1Uid;
+            playerNumber = isPlayer1 ? "player1" : "player2";
             updateWhoseTurn(gameData.whoseTurn); // depends on whether player1 already played
             updatePieces(
-              wasPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
+              isPlayer1 ? player1Pieces.split("") : player2Pieces.split("")
             );
 
-            if (wasPlayer1) {
+            if (isPlayer1) {
               player1ScoreLabel.html("&nbsp;You:");
               player2ScoreLabel.html("&nbsp;P2:");
               player1ScoreInput.addClass("you");
@@ -1075,7 +1076,8 @@
                 player1Pieces,
                 player2Pieces,
                 whoseTurn,
-                localStorage.playerUid
+                isPlayer1 ? localStorage.playerUid : "",
+                isPlayer1 ? "" : localStorage.playerUid
               );
             }
 
@@ -1222,6 +1224,7 @@
         player1Pieces,
         player2Pieces,
         whoseTurn,
+        player1Uid = "",
         player2Uid = ""
       ) {
         const gameRef = doc(db, "games", currentGameFirebaseId);
@@ -1238,13 +1241,15 @@
           xy1: xy1,
           xy2: xy2,
           consumer: consumer,
+          // randomTHISSHOULDGETBLOCKED: 123,
         };
         if (player2Uid) {
           data.player2Uid = player2Uid;
+        } else {
+          data.player1Uid = player1Uid;
         }
 
         try {
-          console.log("data", data);
           await updateDoc(gameRef, data);
           console.log("Game updated successfully");
         } catch (error) {
