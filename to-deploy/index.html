@@ -169,6 +169,16 @@
         grid-template-columns: repeat(15, var(--cell-size));
         grid-gap: var(--grid-gap);
       }
+      body:not(.showingHiddenGame) #gameBoard {
+        --border-width: 1rem;
+        border: var(--border-width) solid #78223a;
+        width: calc(
+          var(--cell-size) * 15 + var(--grid-gap) * 14 + var(--border-width) * 2
+        );
+        height: calc(
+          var(--cell-size) * 15 + var(--grid-gap) * 14 + var(--border-width) * 2
+        );
+      }
       body.showingHiddenGame #gameBoard {
         grid-gap: 0;
       }
