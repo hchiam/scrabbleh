@@ -1,4 +1,4 @@
-# ScrabblEh?
+# Scrabbl![Eh](https://raw.githubusercontent.com/hchiam/scrabbleh/main/to-deploy/favicon.ico)?
 
 scrabble, eh?
 
