@@ -138,9 +138,11 @@
         right: 0;
         top: 0;
         font-size: 0.75rem;
-      }
-      #feedback:after {
-        content: "";
+        background-image: url("feedback-icon.svg");
+        background-size: contain;
+        background-repeat: no-repeat;
+        width: 1.5rem;
+        height: 1.5rem;
       }
       #feedbackLink {
         opacity: 0;
@@ -608,7 +610,7 @@
         <label for="player2ScoreInput">&nbsp;P2:</label
         ><input id="player2ScoreInput" value="0" disabled />
       </div>
-      <button id="feedback" aria-label="Feedback" title="Feedback">⚠</button>
+      <button id="feedback" aria-label="Feedback" title="Feedback"></button>
       <a
         id="feedbackLink"
         aria-label="Feedback"
