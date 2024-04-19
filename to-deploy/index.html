@@ -708,6 +708,7 @@
           initCancel();
           initGameId();
           initGoToGameId();
+          initOnLeave();
           initGameBoard();
           initHiddenGameControls();
         });
@@ -1028,6 +1029,19 @@
           scrabbleh.show();
           submit.text("Submit").hide();
           cancel.text("Cancel").hide();
+        });
+      }
+
+      function initOnLeave() {
+        window.addEventListener("beforeunload", (event) => {
+          if (!gameBoard.text() || !havePlayer2) {
+            localStorage.removeItem("gameId");
+            /*await*/ deleteGame(); // don't wait on deleteGame when running beforeunload logic!
+          }
+          // https://stackoverflow.com/a/19538231
+          let confirmationMessage = "o/";
+          (event || window.event).returnValue = confirmationMessage; //Gecko + IE
+          return confirmationMessage; //Webkit, Safari, Chrome
         });
       }
 
