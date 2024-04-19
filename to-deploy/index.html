@@ -42,6 +42,9 @@
         gap: 1rem;
         width: 100%;
       }
+      body.showingHiddenGame #gameBoardWrapper + .mainControlsContainer {
+        display: none;
+      }
       #gameId {
         width: 16ch;
         font-family: monospace;
@@ -208,6 +211,7 @@
         display: grid;
         grid-template-columns: repeat(15, var(--cell-size));
         grid-gap: var(--grid-gap);
+        margin: auto;
       }
       body:not(.showingHiddenGame) #gameBoard {
         --border-width: 1rem;
