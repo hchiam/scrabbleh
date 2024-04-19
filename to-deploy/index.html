@@ -133,14 +133,20 @@
       }
       #feedback {
         text-decoration: none;
-        margin: 0.25rem;
+        margin: 0.2rem 0.25rem;
         position: fixed;
         right: 0;
-        top: 0.25rem;
+        top: 0;
         font-size: 0.75rem;
       }
       #feedback:after {
         content: "";
+      }
+      #feedbackLink {
+        opacity: 0;
+        pointer-events: none;
+        visibility: hidden;
+        clip-path: polygon(0 0, 0 0, 0 0, 0 0);
       }
       #pieces {
         /*margin-block-start: 2.5rem;*/ /* so .mainControlsContainer doesn't cover top */
@@ -602,8 +608,9 @@
         <label for="player2ScoreInput">&nbsp;P2:</label
         ><input id="player2ScoreInput" value="0" disabled />
       </div>
+      <button id="feedback" aria-label="Feedback" title="Feedback">⚠</button>
       <a
-        id="feedback"
+        id="feedbackLink"
         aria-label="Feedback"
         title="Feedback"
         href="https://forms.gle/GhA9dSnkfX14XqyQ9"
@@ -743,6 +750,7 @@
       const cancel = $("#cancel");
       const spectator = $("#spectator");
       const gameId = $("#gameId");
+      const feedback = $("#feedback");
       const pieces = $("#pieces");
       const gameBoard = $("#gameBoard");
       const hiddenGameControls = $("#hiddenGameControls");
@@ -770,6 +778,7 @@
           initCancel();
           initGameId();
           initGoToGameId();
+          initFeedback();
           initOnLeave();
           initGameBoard();
           initHiddenGameControls();
@@ -1091,6 +1100,16 @@
           scrabbleh.show();
           submit.text("Submit").hide();
           cancel.text("Cancel").hide();
+        });
+      }
+
+      function initFeedback() {
+        const feedbackLink = $("#feedbackLink");
+        feedback.on("click", () => {
+          const yes = confirm("Would you like to send feedback?");
+          if (yes) {
+            feedbackLink[0].click();
+          }
         });
       }
 
