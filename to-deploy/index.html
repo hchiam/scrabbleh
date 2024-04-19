@@ -145,6 +145,59 @@
         margin-block-end: 1rem;
         width: calc(8 * var(--grid-gap) + 7 * var(--cell-size) + 15px);
         margin-inline: auto;
+        background: #978967;
+        border-radius: 0;
+        outline: 0.25rem solid #978967;
+      }
+      #piecesBottom {
+        width: calc(100% + 0.5rem);
+        height: 0.75rem;
+        background: inherit;
+        box-shadow: 0 0 30px black;
+        border-radius: 0;
+        position: relative;
+        left: -0.25rem;
+        bottom: -0.25rem;
+      }
+      #pieces.show-pieces-slowly {
+        overflow: hidden;
+      }
+      #pieces.show-pieces-slowly .piece {
+        --interval: calc(10s / 7);
+        animation: show-pieces-slowly 0.5s both;
+      }
+      #pieces.show-pieces-slowly .piece:nth-child(1) {
+        animation-delay: 0s;
+      }
+      #pieces.show-pieces-slowly .piece:nth-child(2) {
+        animation-delay: var(--interval);
+      }
+      #pieces.show-pieces-slowly .piece:nth-child(3) {
+        animation-delay: calc(var(--interval) * 2);
+      }
+      #pieces.show-pieces-slowly .piece:nth-child(4) {
+        animation-delay: calc(var(--interval) * 3);
+      }
+      #pieces.show-pieces-slowly .piece:nth-child(5) {
+        animation-delay: calc(var(--interval) * 4);
+      }
+      #pieces.show-pieces-slowly .piece:nth-child(6) {
+        animation-delay: calc(var(--interval) * 5);
+      }
+      #pieces.show-pieces-slowly .piece:nth-child(7) {
+        animation-delay: calc(var(--interval) * 6);
+      }
+      @keyframes show-pieces-slowly {
+        from {
+          opacity: 0;
+          transform: translateX(
+            calc((8 * var(--grid-gap) + 7 * var(--cell-size) + 15px) / 2)
+          );
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0%);
+        }
       }
       body.showingHiddenGame #pieces {
         display: none;
@@ -1051,6 +1104,7 @@
           const whatLetter = String(letter)[0];
           htmlString += `<button class="piece ${whatLetter}">${whatLetter}</button>`;
         });
+        htmlString += '<div id="piecesBottom"></div>';
         pieces.html(htmlString);
         pieces
           .find(".piece")
@@ -1413,10 +1467,10 @@
           });
           console.log("Game created with ID: ", gameRef.id);
           initGameBoard();
-          pieces.prop("inert", true); // TODO now: animation for waiting 10s
+          pieces.prop("inert", true).addClass("show-pieces-slowly");
           const secondsToWaitForIsCalm = 10 * 1000;
           setTimeout(() => {
-            pieces.prop("inert", false);
+            pieces.prop("inert", false).removeClass("show-pieces-slowly");
           }, secondsToWaitForIsCalm);
           return gameRef.id; // Returns the generated game ID
         } catch (error) {
