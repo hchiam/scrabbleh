@@ -448,7 +448,9 @@
         -webkit-text-stroke: 2dvmin white;
         margin: 0.75rem;
         transform: rotate(-45deg);
-        animation: splashScreen-animate-eh 0.5s forwards;
+        @media (prefers-reduced-motion: no-preference) {
+          animation: splashScreen-animate-eh 0.5s forwards;
+        }
       }
       @keyframes splashScreen-animate-eh {
         to {
@@ -457,7 +459,9 @@
       }
       #splashScreen h1 > span:not(.eh):first-child {
         transform: translate(-50dvw);
-        animation: splashScreen-animate-first-child 0.5s forwards;
+        @media (prefers-reduced-motion: no-preference) {
+          animation: splashScreen-animate-first-child 0.5s forwards;
+        }
       }
       @keyframes splashScreen-animate-first-child {
         to {
@@ -466,7 +470,9 @@
       }
       #splashScreen h1 > span:not(.eh):last-child {
         transform: translate(+50dvw);
-        animation: splashScreen-animate-last-child 0.5s forwards;
+        @media (prefers-reduced-motion: no-preference) {
+          animation: splashScreen-animate-last-child 0.5s forwards;
+        }
       }
       @keyframes splashScreen-animate-last-child {
         to {
