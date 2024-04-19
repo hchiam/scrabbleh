@@ -73,8 +73,8 @@
       }
       #player1ScoreInput.wobble,
       #player2ScoreInput.wobble {
-        background: yellow;
-        color: black;
+        background: white;
+        color: red;
       }
       .wobble {
         --wobble: 10deg;
@@ -1549,20 +1549,24 @@
 
       let p1ScoreTimeout = null;
       function setPlayer1ScoreInput(score) {
-        player1ScoreInput.val(score).addClass("wobble");
-        clearTimeout(p1ScoreTimeout);
-        p1ScoreTimeout = setTimeout(() => {
-          player1ScoreInput.removeClass("wobble");
-        }, 1000);
+        if (playerNumber === "player1") {
+          player1ScoreInput.val(score).addClass("wobble");
+          clearTimeout(p1ScoreTimeout);
+          p1ScoreTimeout = setTimeout(() => {
+            player1ScoreInput.removeClass("wobble");
+          }, 1000);
+        }
       }
 
       let p2ScoreTimeout = null;
       function setPlayer2ScoreInput(score) {
-        player2ScoreInput.val(score);
-        clearTimeout(p2ScoreTimeout);
-        p2ScoreTimeout = setTimeout(() => {
-          player2ScoreInput.removeClass("wobble");
-        }, 1000);
+        if (playerNumber === "player2") {
+          player2ScoreInput.val(score).addClass("wobble");
+          clearTimeout(p2ScoreTimeout);
+          p2ScoreTimeout = setTimeout(() => {
+            player2ScoreInput.removeClass("wobble");
+          }, 1000);
+        }
       }
 
       async function toggleHiddenGameControls(show) {
