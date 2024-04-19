@@ -1015,8 +1015,12 @@
       function initGoToGameId() {
         $("#goToGameId").on("click", async () => {
           const gameID = String(gameId.val()).replace(/\D/g, "");
+
+          const willBeChangingGameId = localStorage.gameId !== gameID;
+
           localStorage.gameId = gameID;
-          if (!gameBoard.text() || !havePlayer2) {
+
+          if (willBeChangingGameId && (!gameBoard.text() || !havePlayer2)) {
             await deleteGame();
           }
           await setupRealtimeUpdates();
@@ -1395,6 +1399,11 @@
           });
           console.log("Game created with ID: ", gameRef.id);
           initGameBoard();
+          pieces.prop("inert", true); // TODO now: animation for waiting 10s
+          const secondsToWaitForIsCalm = 10 * 1000;
+          setTimeout(() => {
+            pieces.prop("inert", false);
+          }, secondsToWaitForIsCalm);
           return gameRef.id; // Returns the generated game ID
         } catch (error) {
           const errorMessage =
