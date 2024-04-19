@@ -643,6 +643,7 @@
       let player1Pieces = "";
       let player2Pieces = "";
       let playerNumber = "";
+      let havePlayer2 = false;
       let whoseTurn = "";
       let isP1OrP2 = false;
       const piecePoints = {
@@ -1014,10 +1015,11 @@
       function initGoToGameId() {
         $("#goToGameId").on("click", async () => {
           const gameID = String(gameId.val()).replace(/\D/g, "");
-          if (!gameBoard.text()) {
+          localStorage.gameId = gameID;
+          if (!gameBoard.text() || !havePlayer2) {
             await deleteGame();
           }
-          await joinGameByCustomId(gameID);
+          await setupRealtimeUpdates();
 
           scrabbleh.show();
           submit.text("Submit").hide();
@@ -1323,6 +1325,7 @@
             player2Pieces = gameData.player2Pieces;
             xy1 = gameData.xy1;
             xy2 = gameData.xy2;
+            if (gameData.player2Uid) havePlayer2 = true;
             updateWhoseTurn(gameData.whoseTurn);
             initGameBoard();
             if (xy1 !== "" || xy2 !== "") {
@@ -1339,10 +1342,14 @@
               if (gameData.xy1 || gameData.xy2) messageHiddenGame();
             }
           } else {
-            console.log("Could not set up real-time updates for a game doc.");
+            const errorMessage =
+              "Error: Could not set up real-time updates for a game doc.";
+            console.log(errorMessage);
             gameId.val("");
             localStorage.gameId = "";
-            location.reload();
+            /** don't do this because docSnapshot doesn't exist when creating new game:
+             * location.reload();
+             * */
           }
         });
       }
@@ -1358,6 +1365,7 @@
           player1Pieces = bagOfPieces.slice(0, 7);
           player2Pieces = bagOfPieces.slice(7, 14);
           bagOfPieces = bagOfPieces.slice(14);
+          gameBoardString = " ".repeat(15 * 15);
           playerNumber = "player1";
           player1ScoreLabel.html("&nbsp;You:");
           player2ScoreLabel.html("&nbsp;P2:");
@@ -1367,6 +1375,7 @@
           setPlayer2ScoreInput(0);
           player1Character.text("You").addClass("you");
           player2Character.text("P2").removeClass("you");
+          isP1OrP2 = true; // before updateWhoseTurn
           updateWhoseTurn(playerNumber);
           // Add a new document with Firestore-generated unique ID
           const gameRef = await addDoc(gamesCollection, {
@@ -1385,6 +1394,7 @@
             xy2: "",
           });
           console.log("Game created with ID: ", gameRef.id);
+          initGameBoard();
           return gameRef.id; // Returns the generated game ID
         } catch (error) {
           const errorMessage =
@@ -1549,8 +1559,10 @@
 
       let p1ScoreTimeout = null;
       function setPlayer1ScoreInput(score) {
-        if (playerNumber === "player1") {
-          player1ScoreInput.val(score).addClass("wobble");
+        player1ScoreInput.val(score);
+        const shouldAnimate = playerNumber === "player1";
+        if (shouldAnimate) {
+          player1ScoreInput.addClass("wobble");
           clearTimeout(p1ScoreTimeout);
           p1ScoreTimeout = setTimeout(() => {
             player1ScoreInput.removeClass("wobble");
@@ -1560,8 +1572,10 @@
 
       let p2ScoreTimeout = null;
       function setPlayer2ScoreInput(score) {
-        if (playerNumber === "player2") {
-          player2ScoreInput.val(score).addClass("wobble");
+        player2ScoreInput.val(score);
+        const shouldAnimate = playerNumber === "player2";
+        if (shouldAnimate) {
+          player2ScoreInput.addClass("wobble");
           clearTimeout(p2ScoreTimeout);
           p2ScoreTimeout = setTimeout(() => {
             player2ScoreInput.removeClass("wobble");
