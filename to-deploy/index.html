@@ -15,8 +15,10 @@
       :root {
         --cell-size: max(5vmin, 3rem);
         --grid-gap: 2px;
-        --z-piece: 2;
+        --z-playerScoreLabel: 1;
         --z-cell-focused: 1;
+        --z-piece: 2;
+        --z-splashScreen: 3;
       }
       body {
         padding-block-start: 1rem;
@@ -50,6 +52,10 @@
         position: absolute;
         background: transparent;
         color: var(--accent-colour);
+        z-index: var(--z-playerScoreLabel);
+        -webkit-text-fill-color: var(--accent-colour);
+        -webkit-text-stroke: 1px black;
+        paint-order: stroke fill;
       }
       #player1ScoreInput,
       #player2ScoreInput {
@@ -61,6 +67,35 @@
       #player2ScoreInput.you {
         background: oklch(100% 0 0 / 16%);
         color: red;
+      }
+      #player1ScoreInput.wobble,
+      #player2ScoreInput.wobble {
+        background: yellow;
+        color: black;
+      }
+      .wobble {
+        --wobble: 10deg;
+        @media (prefers-reduced-motion: no-preference) {
+          animation: wobble 1s cubic-bezier(0.5, 0, 0.5, 1);
+        }
+      }
+      @keyframes wobble {
+        0%,
+        to {
+          transform: rotate(0);
+        }
+        20% {
+          transform: rotate(calc(-1 * var(--wobble)));
+        }
+        40% {
+          transform: rotate(var(--wobble));
+        }
+        60% {
+          transform: rotate(calc(-1 * var(--wobble)));
+        }
+        80% {
+          transform: rotate(var(--wobble));
+        }
       }
       #scrabbleh {
         color: white;
@@ -105,6 +140,8 @@
         /*margin-block-start: 2.5rem;*/ /* so .mainControlsContainer doesn't cover top */
         /* margin-block-start: 1rem; */
         margin-block-end: 1rem;
+        width: calc(8 * var(--grid-gap) + 7 * var(--cell-size) + 15px);
+        margin-inline: auto;
       }
       body.showingHiddenGame #pieces {
         display: none;
@@ -417,7 +454,7 @@
         background: black;
         margin: -1rem;
         border-radius: 0;
-        z-index: 2;
+        z-index: var(--z-splashScreen);
         display: flex;
         justify-content: center;
         align-items: center;
@@ -760,8 +797,8 @@
 
           player1Score += isPlayer1 ? addedPoints : 0;
           player2Score += isPlayer1 ? 0 : addedPoints;
-          player1ScoreInput.val(player1Score);
-          player2ScoreInput.val(player2Score);
+          setPlayer1ScoreInput(player1Score);
+          setPlayer2ScoreInput(player2Score);
 
           const piecesToReplace = Math.max(
             7 - pieces.find(".piece").length,
@@ -1194,8 +1231,8 @@
             bagOfPieces = gameData.bagOfPieces;
             player1Score = gameData.player1Score;
             player2Score = gameData.player2Score;
-            player1ScoreInput.val(player1Score);
-            player2ScoreInput.val(player2Score);
+            setPlayer1ScoreInput(player1Score);
+            setPlayer2ScoreInput(player2Score);
             player1Pieces = gameData.player1Pieces;
             player2Pieces = gameData.player2Pieces;
             isP1OrP2 =
@@ -1276,8 +1313,8 @@
             gameBoardString = gameData.gameBoard;
             player1Score = gameData.player1Score;
             player2Score = gameData.player2Score;
-            player1ScoreInput.val(player1Score);
-            player2ScoreInput.val(player2Score);
+            setPlayer1ScoreInput(player1Score);
+            setPlayer2ScoreInput(player2Score);
             player1Pieces = gameData.player1Pieces;
             player2Pieces = gameData.player2Pieces;
             xy1 = gameData.xy1;
@@ -1322,8 +1359,8 @@
           player2ScoreLabel.html("&nbsp;P2:");
           player1ScoreInput.addClass("you");
           player2ScoreInput.removeClass("you");
-          player1ScoreInput.val(0);
-          player2ScoreInput.val(0);
+          setPlayer1ScoreInput(0);
+          setPlayer2ScoreInput(0);
           player1Character.text("You").addClass("you");
           player2Character.text("P2").removeClass("you");
           updateWhoseTurn(playerNumber);
@@ -1506,6 +1543,24 @@
           .prop("inert", whoseTurn !== playerNumber || !isP1OrP2);
       }
 
+      let p1ScoreTimeout = null;
+      function setPlayer1ScoreInput(score) {
+        player1ScoreInput.val(score).addClass("wobble");
+        clearTimeout(p1ScoreTimeout);
+        p1ScoreTimeout = setTimeout(() => {
+          player1ScoreInput.removeClass("wobble");
+        }, 1000);
+      }
+
+      let p2ScoreTimeout = null;
+      function setPlayer2ScoreInput(score) {
+        player2ScoreInput.val(score);
+        clearTimeout(p2ScoreTimeout);
+        p2ScoreTimeout = setTimeout(() => {
+          player2ScoreInput.removeClass("wobble");
+        }, 1000);
+      }
+
       async function toggleHiddenGameControls(show) {
         showingHiddenGame = show;
 
@@ -1589,8 +1644,8 @@
 
           positionThePlayerCharacters(xy1, xy2);
 
-          player1ScoreInput.val(player1Score);
-          player2ScoreInput.val(player2Score);
+          setPlayer1ScoreInput(player1Score);
+          setPlayer2ScoreInput(player2Score);
 
           player1Character.toggleClass("consumer", consumer === "player1");
           player2Character.toggleClass("consumer", consumer === "player2");
