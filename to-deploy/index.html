@@ -15,7 +15,6 @@
       :root {
         --cell-size: max(5vmin, 3rem);
         --grid-gap: 2px;
-        --z-submitContainer: 3;
         --z-piece: 2;
         --z-cell-focused: 1;
       }
@@ -30,17 +29,16 @@
       button {
         cursor: pointer;
       }
-      #submitContainer {
-        /* position: fixed;
-              top: 0;
-              left: 0;
-              padding: 1rem;
-              z-index: var(--z-submitContainer);
-              display: flex;
-              gap: 1rem; */
+      .mainControlsContainer {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
       }
-      #submitContainer > * {
-        margin-block-end: 1rem;
+      #gameBoardWrapper + .mainControlsContainer > *:last-child {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        width: 100%;
       }
       #gameId {
         width: 16ch;
@@ -65,15 +63,15 @@
         color: red;
       }
       #scrabbleh {
-        display: inline-block;
         color: white;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        height: min(var(--cell-size), calc((85vw - 6 * var(--grid-gap)) / 7));
+        width: 100%;
       }
       #scrabbleh .eh {
         color: red;
-      }
-      #submit,
-      #cancel {
-        margin-inline-end: 1rem;
       }
       #submit.haveCandidate,
       #cancel.haveCandidate,
@@ -103,7 +101,7 @@
         content: "";
       }
       #pieces {
-        /*margin-block-start: 2.5rem;*/ /* so #submitContainer doesn't cover top */
+        /*margin-block-start: 2.5rem;*/ /* so .mainControlsContainer doesn't cover top */
         /* margin-block-start: 1rem; */
         margin-block-end: 1rem;
       }
@@ -111,8 +109,8 @@
         display: none;
       }
       .piece {
-        width: var(--cell-size);
-        height: var(--cell-size);
+        width: min(var(--cell-size), calc((85vw - 6 * var(--grid-gap)) / 7));
+        height: min(var(--cell-size), calc((85vw - 6 * var(--grid-gap)) / 7));
         margin: var(--grid-gap);
         display: inline-flex;
         justify-content: center;
@@ -147,10 +145,10 @@
         display: none;
         color: yellow;
         font-weight: bold;
-        margin-block: 1rem;
       }
       #gameBoardWrapper {
         overflow: auto;
+        margin-block: 1rem;
       }
       body.showingHiddenGame #gameBoardWrapper {
         overflow: revert;
@@ -483,20 +481,17 @@
     ></script>
   </head>
   <body>
-    <div id="submitContainer">
+    <div class="mainControlsContainer">
       <button id="goToGameId">Game ID:</button>
       <input id="gameId" placeholder="go to game ID" />
-      <label for="player1ScoreInput">&nbsp;P1:</label
-      ><input id="player1ScoreInput" value="0" disabled />
-      <label for="player2ScoreInput">&nbsp;P2:</label
-      ><input id="player2ScoreInput" value="0" disabled />
-      <span
-        id="scrabbleh"
-        title="Scrabble, but E and H unlock Extra Hidden stuff?"
-        >Scrabbl<span class="eh">Eh</span>?</span
-      >
-      <button id="submit">Submit</button>
-      <button id="cancel">Cancel</button>
+      <div>
+        <label for="player1ScoreInput">&nbsp;P1:</label
+        ><input id="player1ScoreInput" value="0" disabled />
+      </div>
+      <div>
+        <label for="player2ScoreInput">&nbsp;P2:</label
+        ><input id="player2ScoreInput" value="0" disabled />
+      </div>
       <a
         id="feedback"
         aria-label="Feedback"
@@ -506,14 +501,25 @@
         rel="noopener noreferrer"
         >💬</a
       >
-      <p id="spectator">(You are spectating P1 and P2.)</p>
     </div>
-    <div id="pieces"></div>
     <div id="gameBoardWrapper">
       <div id="gameBoardTransformContainer">
         <div id="gameBoard"></div>
         <div id="player1Character">P1</div>
         <div id="player2Character">P2</div>
+      </div>
+    </div>
+    <div class="mainControlsContainer">
+      <div id="pieces"></div>
+      <div>
+        <span
+          id="scrabbleh"
+          title="Scrabble, but E and H unlock Extra Hidden stuff?"
+          >Scrabbl<span class="eh">Eh</span>?</span
+        >
+        <button id="submit">Submit</button>
+        <button id="cancel">Cancel</button>
+        <p id="spectator">(You are spectating P1 and P2.)</p>
       </div>
     </div>
     <div id="hiddenGameControls">
